@@ -1874,6 +1874,23 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     />
                   </div>
 
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                      <span>Teks Pengumuman Berjalan Header (Running Text):</span>
+                      <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">Banner Atas Header</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.topAnnouncementText || ''}
+                      onChange={(e) => setSettings({ ...settings, topAnnouncementText: e.target.value })}
+                      placeholder="Contoh: Grosir & Eceran Parfum Laundry Batang • Free Delivery Batang Min. Belanja Rp 250.000 ..."
+                      className="w-full bg-slate-50 dark:bg-slate-800 text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 font-medium text-slate-800 dark:text-slate-100"
+                    />
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                      Teks ini akan otomatis bergerak (running text) di bagian banner paling atas header aplikasi.
+                    </p>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tagline Toko:</label>
                     <input
