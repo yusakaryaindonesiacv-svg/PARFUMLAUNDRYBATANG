@@ -182,6 +182,7 @@ export const DEFAULT_USERS: User[] = [
 export const DEFAULT_SETTINGS: StoreSettings = {
   storeName: 'PARFUM LAUNDRY BATANG',
   tagline: 'Pusat Grosir & Eceran Fragrance Laundry Kualitas Super Tahan Lama',
+  topAnnouncementText: 'Grosir & Eceran Parfum Laundry Batang • Free Delivery Batang Min. Belanja Rp 250.000 • Melayani Grosir & Eceran Fragrance Laundry Super Tahan Lama • Order Cepat Lewat Aplikasi HP',
   appLogoUrl: '',
   phone: '085742889900',
   address: 'Bleder, Tegalsari, Kandeman, Batang, Central Java, 51261, Indonesia',
