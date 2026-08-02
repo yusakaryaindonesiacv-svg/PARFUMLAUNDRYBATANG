@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Grid, ShoppingBag, Receipt, ShieldCheck, Truck } from 'lucide-react';
+import { Home, User as UserIcon, ShoppingBag, Receipt, ShieldCheck, Truck } from 'lucide-react';
 import { User } from '../types';
 import { getEffectivePermissions } from '../lib/storage';
 
@@ -41,20 +41,18 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           </button>
         )}
 
-        {/* Katalog Aroma */}
-        {permissions.canAccessCatalog && (
-          <button
-            onClick={() => setActiveTab('catalog')}
-            className={`flex flex-col items-center gap-1 text-[11px] font-medium transition-colors ${
-              activeTab === 'catalog'
-                ? 'text-indigo-600 dark:text-indigo-400 font-bold'
-                : 'text-slate-500 dark:text-slate-400'
-            }`}
-          >
-            <Grid className={`w-5 h-5 ${activeTab === 'catalog' ? 'scale-110' : ''}`} />
-            <span>Katalog</span>
-          </button>
-        )}
+        {/* Dashboard Akun Saya */}
+        <button
+          onClick={() => setActiveTab('account')}
+          className={`flex flex-col items-center gap-1 text-[11px] font-medium transition-colors ${
+            activeTab === 'account'
+              ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+              : 'text-slate-500 dark:text-slate-400'
+          }`}
+        >
+          <UserIcon className={`w-5 h-5 ${activeTab === 'account' ? 'scale-110' : ''}`} />
+          <span>Akun</span>
+        </button>
 
         {/* Kasir POS (ONLY if allowed by role) */}
         {permissions.canAccessPos && (
