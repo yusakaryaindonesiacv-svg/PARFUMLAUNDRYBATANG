@@ -12,6 +12,8 @@ import {
   ChevronLeft, 
   ChevronRight, 
   ShoppingBag as CartIcon,
+  Smartphone,
+  Download
 } from 'lucide-react';
 import { StoreSettings, User } from '../types';
 import { getEffectivePermissions } from '../lib/storage';
@@ -25,6 +27,7 @@ interface LeftSidebarProps {
   onOpenAuth: () => void;
   onLogout: () => void;
   onOpenDistanceCalc: () => void;
+  onOpenInstallPwa?: () => void;
   cartCount: number;
   onOpenCart: () => void;
   settings: StoreSettings;
@@ -39,6 +42,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onOpenAuth,
   onLogout,
   onOpenDistanceCalc,
+  onOpenInstallPwa,
   cartCount,
   onOpenCart,
   settings,
@@ -48,7 +52,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   const allNavItems = [
     { id: 'home', label: 'Beranda Toko', icon: Home, badge: '', show: permissions.canAccessHome },
     { id: 'catalog', label: 'Katalog Produk', icon: ShoppingBag, badge: 'Lengkap', show: permissions.canAccessCatalog },
-    { id: 'account', label: 'Akun Saya', icon: UserCheck, badge: 'Profil', show: true },
     { id: 'pos', label: 'Kasir POS Off/Online', icon: Calculator, badge: 'Kasir', show: permissions.canAccessPos },
     { id: 'tracking', label: 'Tracking Pesanan', icon: Truck, badge: 'Cek Resi', show: permissions.canAccessTracking },
     { id: 'admin', label: 'Panel Admin Store', icon: ShieldCheck, badge: 'Admin', show: permissions.canAccessAdmin },
@@ -79,16 +82,20 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
               onClick={() => setActiveTab('home')}
               className="flex items-center gap-3 cursor-pointer overflow-hidden"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-extrabold flex items-center justify-center text-lg shadow-md shrink-0">
-                P
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-extrabold flex items-center justify-center text-lg shadow-md shrink-0 overflow-hidden">
+                {settings.appLogoUrl ? (
+                  <img src={settings.appLogoUrl} alt={settings.storeName} className="w-full h-full object-cover" />
+                ) : (
+                  settings.storeName ? settings.storeName.charAt(0).toUpperCase() : 'P'
+                )}
               </div>
               {isOpen && (
                 <div className="truncate">
-                  <h2 className="font-extrabold text-sm text-slate-800 dark:text-white leading-tight truncate">
-                    PARFUM LAUNDRY
+                  <h2 className="font-extrabold text-xs sm:text-sm text-slate-800 dark:text-white leading-tight truncate">
+                    {settings.storeName || 'PARFUM LAUNDRY BATANG'}
                   </h2>
-                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 block tracking-wider">
-                    BATANG STORE
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 block tracking-wider truncate">
+                    {settings.city ? `${settings.city.toUpperCase()} STORE` : 'ONLINE STORE'}
                   </span>
                 </div>
               )}
@@ -200,6 +207,26 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
                   </div>
                 )}
               </button>
+
+              {/* Install PWA Mobile App Button */}
+              {onOpenInstallPwa && (
+                <button
+                  onClick={() => {
+                    onOpenInstallPwa();
+                    if (window.innerWidth < 1024) onToggle();
+                  }}
+                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl font-extrabold text-xs text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-600/20 transition-all mt-1"
+                  title="Install Aplikasi HP"
+                >
+                  <Smartphone className="w-5 h-5 text-amber-300 shrink-0" />
+                  {isOpen && (
+                    <div className="flex-1 flex items-center justify-between text-left">
+                      <span>Install App HP</span>
+                      <span className="px-1.5 py-0.5 bg-white/20 text-white rounded text-[9px]">PWA</span>
+                    </div>
+                  )}
+                </button>
+              )}
             </div>
           </nav>
         </div>
