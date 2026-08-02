@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Sun, Moon, ShieldCheck, Sparkles, UserCheck, MapPin, Menu, Search, LogOut } from 'lucide-react';
+import { ShoppingBag, Sun, Moon, ShieldCheck, Sparkles, UserCheck, MapPin, Menu, Search, LogOut, Smartphone } from 'lucide-react';
 import { StoreSettings, User } from '../types';
 
 interface NavbarProps {
@@ -12,6 +12,7 @@ interface NavbarProps {
   onOpenAuth: () => void;
   onOpenAdmin: () => void;
   onOpenDistanceCalc: () => void;
+  onOpenInstallPwa?: () => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   searchQuery: string;
@@ -30,6 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
   onOpenAdmin,
   onOpenDistanceCalc,
+  onOpenInstallPwa,
   activeTab,
   setActiveTab,
   searchQuery,
@@ -94,6 +96,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Right Action Controls */}
           <div className="flex items-center gap-2">
             
+            {/* Install PWA Button */}
+            {onOpenInstallPwa && (
+              <button
+                onClick={onOpenInstallPwa}
+                title="Install Aplikasi di HP"
+                className="px-2.5 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-sm transition-all"
+              >
+                <Smartphone className="w-4 h-4 text-amber-300 shrink-0" />
+                <span className="hidden sm:inline">Install App HP</span>
+              </button>
+            )}
+
             {/* Quick Distance Calc */}
             <button
               onClick={onOpenDistanceCalc}
