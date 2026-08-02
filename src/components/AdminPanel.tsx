@@ -1106,8 +1106,60 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       {/* SIDEBAR NAVIGATION LAYOUT (Main content Left, Navigation Sidebar Right) */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         
-        {/* MAIN TAB CONTENT RENDERER (LEFT SIDE) */}
-        <div className="flex-1 w-full min-w-0 order-2 lg:order-1">
+        {/* MOBILE NAVIGATION BAR (Horizontal Scroll + Quick Selector, Hidden on Desktop) */}
+        <div className="lg:hidden w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-sm space-y-2.5">
+          <div className="flex items-center justify-between gap-2 px-1">
+            <div className="flex items-center gap-1.5 text-xs font-black text-slate-800 dark:text-slate-200">
+              <Layers className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span>Menu Admin:</span>
+            </div>
+            
+            {/* Quick Mobile Dropdown */}
+            <select
+              value={activeAdminTab}
+              onChange={(e) => setActiveAdminTab(e.target.value as any)}
+              className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-extrabold text-xs px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {adminMenuTabs.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label} {t.badge !== null ? `(${t.badge})` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Horizontal Scrollable Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+            {adminMenuTabs.map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeAdminTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveAdminTab(tab.id as any)}
+                  className={`shrink-0 px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all ${
+                    isActive
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 ring-2 ring-indigo-400/50'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  <span className="whitespace-nowrap">{tab.label}</span>
+                  {tab.badge !== null && (
+                    <span className={`px-1.5 py-0.5 text-[10px] font-black rounded-full ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                    }`}>
+                      {tab.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* MAIN TAB CONTENT RENDERER (LEFT SIDE ON DESKTOP) */}
+        <div className="flex-1 w-full min-w-0">
           
           {/* TAB 1: DASHBOARD OVERVIEW */}
           {activeAdminTab === 'dashboard' && (
@@ -2628,8 +2680,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         </div>
 
-        {/* VERTICAL RIGHT SIDEBAR NAVIGATION MENU (Order 1 on mobile, Order 2 on Desktop) */}
-        <div className="w-full lg:w-72 shrink-0 order-1 lg:order-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm sticky top-20">
+        {/* DESKTOP VERTICAL RIGHT SIDEBAR NAVIGATION MENU (Hidden on mobile) */}
+        <div className="hidden lg:block w-72 shrink-0 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm sticky top-24">
           <div className="px-3 py-2 mb-3 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
             <h3 className="font-extrabold text-xs uppercase tracking-wider text-slate-400">Navigasi Admin</h3>
             <span className="px-2 py-0.5 text-[10px] bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 font-bold rounded-full">
