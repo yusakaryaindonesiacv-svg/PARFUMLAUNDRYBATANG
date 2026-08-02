@@ -138,6 +138,7 @@ export interface CarouselBanner {
 export interface StoreSettings {
   storeName: string;
   tagline: string;
+  topAnnouncementText?: string; // Running text banner above navbar header
   appLogoUrl?: string; // URL or Base64 data of app logo & mobile install icon
   phone: string;
   address: string;
