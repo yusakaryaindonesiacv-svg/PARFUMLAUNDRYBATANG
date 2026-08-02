@@ -44,6 +44,7 @@ import { DistanceCalculatorModal } from './components/DistanceCalculatorModal';
 import { AdminPanel } from './components/AdminPanel';
 import { AuthModal } from './components/AuthModal';
 import { DeploymentGuideModal } from './components/DeploymentGuideModal';
+import { AccountDashboard } from './components/AccountDashboard';
 
 export default function App() {
   // Initialize LocalStorage with default seeds on first load & fetch Supabase remote data if available
@@ -275,77 +276,6 @@ export default function App() {
     }
     setStorageData(STORAGE_KEYS.DARK_MODE, darkMode);
   }, [darkMode]);
-
-  // Dynamic favicon, title, and PWA Web Manifest generator for Mobile Install Icon
-  useEffect(() => {
-    if (settings.storeName) {
-      document.title = settings.storeName;
-    }
-
-    // Favicon link
-    let faviconLink = document.querySelector<HTMLLinkElement>("link[rel='icon']");
-    if (!faviconLink) {
-      faviconLink = document.createElement('link');
-      faviconLink.rel = 'icon';
-      document.head.appendChild(faviconLink);
-    }
-    if (settings.appLogoUrl) {
-      faviconLink.href = settings.appLogoUrl;
-    }
-
-    // Apple Touch Icon link (for iOS Safari Home Screen)
-    let appleTouchIconLink = document.querySelector<HTMLLinkElement>("link[rel='apple-touch-icon']");
-    if (!appleTouchIconLink) {
-      appleTouchIconLink = document.createElement('link');
-      appleTouchIconLink.rel = 'apple-touch-icon';
-      document.head.appendChild(appleTouchIconLink);
-    }
-    if (settings.appLogoUrl) {
-      appleTouchIconLink.href = settings.appLogoUrl;
-    }
-
-    // Web App Manifest link (for Android / PWA Home Screen Install Icon)
-    const iconSrc = settings.appLogoUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%234f46e5"/><text x="50" y="65" font-size="50" font-weight="bold" text-anchor="middle" fill="white">P</text></svg>';
-    
-    const manifestData = {
-      name: settings.storeName || 'Parfum Laundry Batang',
-      short_name: settings.storeName ? (settings.storeName.length > 12 ? settings.storeName.substring(0, 12) : settings.storeName) : 'Parfum Laundry',
-      description: settings.tagline || 'Aplikasi Kasir & Pemesanan Parfum Laundry',
-      start_url: '/',
-      display: 'standalone',
-      background_color: '#0f172a',
-      theme_color: '#4f46e5',
-      icons: [
-        {
-          src: iconSrc,
-          sizes: '192x192',
-          type: 'image/png',
-          purpose: 'any maskable'
-        },
-        {
-          src: iconSrc,
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'any maskable'
-        }
-      ]
-    };
-
-    const blob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
-    const manifestObjectUrl = URL.createObjectURL(blob);
-
-    let manifestLink = document.querySelector<HTMLLinkElement>("link[rel='manifest']");
-    if (!manifestLink) {
-      manifestLink = document.createElement('link');
-      manifestLink.rel = 'manifest';
-      document.head.appendChild(manifestLink);
-    }
-    manifestLink.href = manifestObjectUrl;
-
-    return () => {
-      URL.revokeObjectURL(manifestObjectUrl);
-    };
-  }, [settings.appLogoUrl, settings.storeName, settings.tagline]);
 
   // Listen for PWA beforeinstallprompt event
   useEffect(() => {
@@ -579,11 +509,22 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'account' && (
+            <AccountDashboard
+              currentUser={currentUser}
+              orders={orders}
+              customers={customers}
+              settings={settings}
+              onOpenAuth={() => setIsAuthOpen(true)}
+              onLogout={() => setCurrentUser(null)}
+              setActiveTab={setActiveTab}
+            />
+          )}
+
           {activeTab === 'pos' && userPermissions.canAccessPos && (
             <PosKasir
               products={products}
               customers={customers}
-              settings={settings}
               onCompleteSale={handleCompletePosSale}
             />
           )}
