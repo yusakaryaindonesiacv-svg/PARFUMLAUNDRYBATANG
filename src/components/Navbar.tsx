@@ -41,12 +41,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   return (
     <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
-      {/* Top Banner Notice */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[11px] py-1 px-4 text-center font-bold flex items-center justify-center gap-2 overflow-hidden">
-        <Sparkles className="w-3.5 h-3.5 animate-pulse shrink-0" />
-        <span className="truncate">
-          Grosir & Eceran Parfum Laundry Batang • Free Delivery Batang Min. Belanja Rp {settings.freeDeliveryMinOrder.toLocaleString('id-ID')}
-        </span>
+      {/* Top Banner Running Text */}
+      <div className="bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-700 text-white text-[11px] py-1 px-3 font-bold flex items-center gap-2.5 overflow-hidden shadow-inner">
+        <div className="flex items-center gap-1 px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full shrink-0 z-10 shadow-sm border border-white/20">
+          <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-wider text-amber-200 whitespace-nowrap">INFO TOKO</span>
+        </div>
+        <div className="flex-1 overflow-hidden relative flex items-center min-w-0">
+          <marquee scrollamount="5" className="font-extrabold whitespace-nowrap text-indigo-50 tracking-wide">
+            {settings.topAnnouncementText || `Grosir & Eceran Parfum Laundry Batang • Free Delivery Batang Min. Belanja Rp ${settings.freeDeliveryMinOrder.toLocaleString('id-ID')} • Melayani Grosir & Eceran Fragrance Laundry Super Tahan Lama • Order Cepat Lewat Aplikasi HP`}
+          </marquee>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
