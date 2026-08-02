@@ -1,0 +1,325 @@
+export interface RegionProvince {
+  name: string;
+  baseRateJnt: number;
+  baseRateJne: number;
+  baseRatePos: number;
+  baseRateSicepat: number;
+  baseRateAnteraja: number;
+  baseRateWahana: number;
+  cities: RegionCity[];
+}
+
+export interface RegionCity {
+  name: string;
+  type: 'Kota' | 'Kabupaten';
+  cityFeeAdjustment?: number; // Surcharge or discount for city center vs kabupaten
+  districts: string[];
+}
+
+export const INDONESIA_REGIONS: RegionProvince[] = [
+  {
+    name: 'Jawa Tengah',
+    baseRateJnt: 10000,
+    baseRateJne: 9000,
+    baseRatePos: 8000,
+    baseRateSicepat: 9500,
+    baseRateAnteraja: 9000,
+    baseRateWahana: 6000,
+    cities: [
+      { name: 'Kabupaten Batang', type: 'Kabupaten', districts: ['Batang', 'Kandeman', 'Warungasem', 'Tulis', 'Subah', 'Limpung', 'Bandar', 'Banyuputih', 'Gringsing', 'Pecalungan', 'Wonotunggal', 'Tersono', 'Reban', 'Blado', 'Bawang'] },
+      { name: 'Kota Pekalongan', type: 'Kota', districts: ['Pekalongan Barat', 'Pekalongan Timur', 'Pekalongan Selatan', 'Pekalongan Utara'] },
+      { name: 'Kabupaten Pekalongan', type: 'Kabupaten', districts: ['Kedungwuni', 'Wiradesa', 'Buaran', 'Tirto', 'Sragi', 'Siwalan', 'Kajen', 'Bojong', 'Wonopringgo', 'Karanganyar', 'Doro', 'Talun', 'Lebakbarang', 'Petungkriyono', 'Kandangserang', 'Paninggaran'] },
+      { name: 'Kota Semarang', type: 'Kota', districts: ['Semarang Tengah', 'Semarang Barat', 'Semarang Timur', 'Semarang Selatan', 'Semarang Utara', 'Candisari', 'Gajahmungkur', 'Gayamsari', 'Genuk', 'Gunungpati', 'Mijen', 'Ngaliyan', 'Pedurungan', 'Banyumanik', 'Tugu'] },
+      { name: 'Kabupaten Semarang', type: 'Kabupaten', districts: ['Ungaran Barat', 'Ungaran Timur', 'Ambarawa', 'Bawen', 'Bergas', 'Bringin', 'Getasan', 'Jambu', 'Kaliwungu', 'Pabelan', 'Pringapus', 'Suruh', 'Tuntang'] },
+      { name: 'Kota Surakarta (Solo)', type: 'Kota', districts: ['Banjarsari', 'Jebres', 'Laweyan', 'Pasar Kliwon', 'Serengan'] },
+      { name: 'Kabupaten Banyumas (Purwokerto)', type: 'Kabupaten', districts: ['Purwokerto Timur', 'Purwokerto Barat', 'Purwokerto Utara', 'Purwokerto Selatan', 'Ajibarang', 'Banyumas', 'Baturraden', 'Cilongok', 'Gumelar', 'Jatilawang', 'Karanglewas', 'Kebasen', 'Kembaran', 'Kemranjen', 'Sokaraja', 'Sumpiuh', 'Wangon'] },
+      { name: 'Kabupaten Cilacap', type: 'Kabupaten', districts: ['Cilacap Selatan', 'Cilacap Tengah', 'Cilacap Utara', 'Adipala', 'Bantarsari', 'Gandrungmangu', 'Jatilawang', 'Jeruklegi', 'Kesugihan', 'Kroya', 'Majenang', 'Maos', 'Sidareja'] },
+      { name: 'Kabupaten Tegal', type: 'Kabupaten', districts: ['Slawi', 'Adiwerna', 'Balapulang', 'Bumijawa', 'Dukuhturi', 'Dukuhwaru', 'Jatinegara', 'Kedungbanteng', 'Kramat', 'Margasari', 'Pagerbarang', 'Pangkah', 'Pangkah', 'Talang', 'Tarub', 'Warureja'] },
+      { name: 'Kota Tegal', type: 'Kota', districts: ['Tegal Barat', 'Tegal Timur', 'Tegal Selatan', 'Margadana'] },
+      { name: 'Kabupaten Brebes', type: 'Kabupaten', districts: ['Brebes', 'Bumiayu', 'Bulakamba', 'Jatibarang', 'Kersana', 'Ketanggungan', 'Larangan', 'Losari', 'Paguyangan', 'Sirampog', 'Songgom', 'Tanjung', 'Wanasari'] },
+      { name: 'Kabupaten Kendal', type: 'Kabupaten', districts: ['Kendal', 'Boja', 'Brangsong', 'Cepiring', 'Gemuh', 'Kaliwungu', 'Limbangan', 'Patean', 'Pegandon', 'Ringinarum', 'Singorojo', 'Sukorejo', 'Weleri'] },
+      { name: 'Kabupaten Kudus', type: 'Kabupaten', districts: ['Kudus Kota', 'Bae', 'Dawe', 'Jati', 'Jekulo', 'Kaliwungu', 'Gebog', 'Mejobo', 'Undaan'] },
+      { name: 'Kabupaten Magelang', type: 'Kabupaten', districts: ['Muntilan', 'Mertoyudan', 'Borobudur', 'Bandongan', 'Candi Mulyo', 'Grabag', 'Kaliangkrik', 'Mungkid', 'Salam', 'Salaman', 'Secang', 'Windusari'] },
+      { name: 'Kota Magelang', type: 'Kota', districts: ['Magelang Utara', 'Magelang Tengah', 'Magelang Selatan'] },
+      { name: 'Kabupaten Pati', type: 'Kabupaten', districts: ['Pati', 'Batangan', 'Cluwak', 'Dukuhseti', 'Gabus', 'Gembong', 'Juwana', 'Kayen', 'Margorejo', 'Margoyoso', 'Tayu', 'Trangkil', 'Wedarijaksa'] },
+      { name: 'Kabupaten Pemalang', type: 'Kabupaten', districts: ['Pemalang', 'Ampelgading', 'Bantarbolang', 'Belik', 'Bodeh', 'Comal', 'Moga', 'Petarukan', 'Pulosari', 'Randudongkal', 'Taman', 'Ulujami'] },
+      { name: 'Kabupaten Purworejo', type: 'Kabupaten', districts: ['Purworejo', 'Bayan', 'Bener', 'Bruno', 'Gebang', 'Kutoarjo', 'Loano', 'Pituruh', 'Purwodadi'] },
+      { name: 'Kabupaten Kebumen', type: 'Kabupaten', districts: ['Kebumen', 'Adimulyo', 'Alian', 'Ambal', 'Gombong', 'Karanganyar', 'Kutowinangun', 'Prembun', 'Sruweng'] },
+      { name: 'Kabupaten Wonosobo', type: 'Kabupaten', districts: ['Wonosobo', 'Garung', 'Kejajar (Dieng)', 'Kertek', 'Leksono', 'Mojotengah', 'Sapuran', 'Selomerto', 'Watumalang'] },
+      { name: 'Kabupaten Temanggung', type: 'Kabupaten', districts: ['Temanggung', 'Bansari', 'Bejen', 'Bulu', 'Candiroto', 'Kedu', 'Kranggan', 'Parakan', 'Pringsurat', 'Tlogomulyo'] },
+      { name: 'Kabupaten Boyolali', type: 'Kabupaten', districts: ['Boyolali', 'Ampel', 'Banyudono', 'Ceper', 'Mojoagung', 'Musuk', 'Ngemplak', 'Selo', 'Simo', 'Teras'] },
+      { name: 'Kabupaten Klaten', type: 'Kabupaten', districts: ['Klaten Utara', 'Klaten Tengah', 'Klaten Selatan', 'Cawas', 'Ceper', 'Delanggu', 'Gantiwarno', 'Jatinom', 'Karanganom', 'Prambanan', 'Pedan', 'Wonosari'] },
+      { name: 'Kabupaten Sukoharjo', type: 'Kabupaten', districts: ['Sukoharjo', 'Baki', 'Gatak', 'Grogol (Solo Baru)', 'Kartasura', 'Mojolaban', 'Nguter', 'Polokarto', 'Tawangsari'] },
+      { name: 'Kabupaten Karanganyar', type: 'Kabupaten', districts: ['Karanganyar', 'Colomadu', 'Gondangrejo', 'Jaten', 'Karangpandan', 'Kebakkramat', 'Matesih', 'Ngargoyoso', 'Tawangmangu'] },
+      { name: 'Kabupaten Sragen', type: 'Kabupaten', districts: ['Sragen', 'Gesi', 'Gemolong', 'Gondang', 'Kalijambe', 'Karangmalang', 'Masaran', 'Plupuh', 'Sambungmacan', 'Tanon'] },
+      { name: 'Kabupaten Wonogiri', type: 'Kabupaten', districts: ['Wonogiri', 'Baturetno', 'Eromoko', 'Giriwoyo', 'Jatisrono', 'Manyaran', 'Ngadirojo', 'Praci', 'Purwantoro', 'Selogiri'] },
+      { name: 'Kabupaten Grobogan (Purwodadi)', type: 'Kabupaten', districts: ['Purwodadi', 'Grobogan', 'Gabus', 'Geyer', 'Godong', 'Karangrayung', 'Kradenan', 'Penawangan', 'Pulokulon', 'Tawangharjo', 'Wirosari'] },
+      { name: 'Kabupaten Blora', type: 'Kabupaten', districts: ['Blora', 'Banjarejo', 'Bogorejo', 'Cepu', 'Jepon', 'Jati', 'Kunduran', 'Ngawen', 'Randublatung', 'Tunjungan'] },
+      { name: 'Kabupaten Rembang', type: 'Kabupaten', districts: ['Rembang', 'Batuwarno', 'Kaliori', 'Kragan', 'Lasem', 'Pancur', 'Rembang Kota', 'Sarang', 'Sluke', 'Sulang'] },
+      { name: 'Kabupaten Jepara', type: 'Kabupaten', districts: ['Jepara', 'Batealit', 'Donorojo', 'Kedung', 'Kembang', 'Mayong', 'Mlonggo', 'Nalumsari', 'Tahunan', 'Welahan', 'Karimunjawa'] },
+    ],
+  },
+  {
+    name: 'DKI Jakarta',
+    baseRateJnt: 14000,
+    baseRateJne: 13000,
+    baseRatePos: 11000,
+    baseRateSicepat: 13500,
+    baseRateAnteraja: 13000,
+    baseRateWahana: 9000,
+    cities: [
+      { name: 'Jakarta Pusat', type: 'Kota', districts: ['Cempaka Putih', 'Gambir', 'Johar Baru', 'Kemayoran', 'Menteng', 'Sawah Besar', 'Senen', 'Tanah Abang'] },
+      { name: 'Jakarta Selatan', type: 'Kota', districts: ['Cilandak', 'Jagakarsa', 'Kebayoran Baru', 'Kebayoran Lama', 'Mampang Prapatan', 'Pancoran', 'Pasar Minggu', 'Pesanggrahan', 'Setiabudi', 'Tebet'] },
+      { name: 'Jakarta Barat', type: 'Kota', districts: ['Cengkareng', 'Grogol Petamburan', 'Taman Sari', 'Tambora', 'Kebon Jeruk', 'Kalideres', 'Palmerah', 'Kembangan'] },
+      { name: 'Jakarta Timur', type: 'Kota', districts: ['Cakung', 'Cipayung', 'Ciracas', 'Duren Sawit', 'Jatinegara', 'Kramat Jati', 'Makasar', 'Matraman', 'Pasar Rebo', 'Pulo Gadung'] },
+      { name: 'Jakarta Utara', type: 'Kota', districts: ['Cilincing', 'Kelapa Gading', 'Koja', 'Pademangan', 'Penjaringan', 'Tanjung Priok'] },
+      { name: 'Kepulauan Seribu', type: 'Kabupaten', cityFeeAdjustment: 10000, districts: ['Kepulauan Seribu Utara', 'Kepulauan Seribu Selatan'] },
+    ],
+  },
+  {
+    name: 'Jawa Barat',
+    baseRateJnt: 13000,
+    baseRateJne: 12000,
+    baseRatePos: 10000,
+    baseRateSicepat: 12500,
+    baseRateAnteraja: 12000,
+    baseRateWahana: 8000,
+    cities: [
+      { name: 'Kota Bandung', type: 'Kota', districts: ['Bandung Wetan', 'Coblong', 'Cicendo', 'Andir', 'Astanaanyar', 'Babakan Ciparay', 'Batununggal', 'Bojongloa Kaler', 'Bojongloa Kidul', 'Buahbatu', 'Cibeunying Kaler', 'Cibeunying Kidul', 'Cibiru', 'Kiaracondong', 'Lengkong', 'Rancasari', 'Regol', 'Sukajadi', 'Sumur Bandung', 'Ujungberung'] },
+      { name: 'Kabupaten Bandung', type: 'Kabupaten', districts: ['Baleendah', 'Banjaran', 'Bojongsoang', 'Cicalengka', 'Cileunyi', 'Cimenyan', 'Dayeuhkolot', 'Katapang', 'Margahayu', 'Pangalengan', 'Rancaekek', 'Soreang'] },
+      { name: 'Kota Bekasi', type: 'Kota', districts: ['Bekasi Barat', 'Bekasi Timur', 'Bekasi Utara', 'Bekasi Selatan', 'Jatiasih', 'Jatisampurna', 'Medan Satria', 'Mustika Jaya', 'Pondok Gede', 'Pondok Melati', 'Rawalumbu'] },
+      { name: 'Kabupaten Bekasi', type: 'Kabupaten', districts: ['Cikarang Pusat', 'Cikarang Barat', 'Cikarang Timur', 'Cikarang Utara', 'Cikarang Selatan', 'Babelan', 'Cibitung', 'Kedungwaringin', 'Tambun Selatan', 'Tambun Utara', 'Tarumajaya'] },
+      { name: 'Kota Depok', type: 'Kota', districts: ['Beji', 'Bojongsari', 'Cilodong', 'Cimanggis', 'Cinere', 'Cipayung', 'Limo', 'Pancasoran Mas', 'Sawangan', 'Sukmajaya', 'Tapos'] },
+      { name: 'Kota Bogor', type: 'Kota', districts: ['Bogor Barat', 'Bogor Selatan', 'Bogor Tengah', 'Bogor Timur', 'Bogor Utara', 'Tanah Sareal'] },
+      { name: 'Kabupaten Bogor', type: 'Kabupaten', districts: ['Cibinong', 'Ciawi', 'Cisarua', 'Cileungsi', 'Gunung Putri', 'Jasinga', 'Leuwiliang', 'Parung', 'Sentul', 'Sukasari'] },
+      { name: 'Kota Cimahi', type: 'Kota', districts: ['Cimahi Selatan', 'Cimahi Tengah', 'Cimahi Utara'] },
+      { name: 'Kabupaten Karawang', type: 'Kabupaten', districts: ['Karawang Barat', 'Karawang Timur', 'Cikampek', 'Jatisari', 'Klari', 'Kotabaru', 'Rengasdengklok', 'Telukjambe Timur', 'Telukjambe Barat'] },
+      { name: 'Kabupaten Purwakarta', type: 'Kabupaten', districts: ['Purwakarta', 'Babakancikao', 'Campaka', 'Jatiluhur', 'Plered', 'Wanayasa'] },
+      { name: 'Kabupaten Subang', type: 'Kabupaten', districts: ['Subang', 'Ciasem', 'Kalijati', 'Pamanukan', 'Pabuaran', 'Pagaden'] },
+      { name: 'Kabupaten Cirebon', type: 'Kabupaten', districts: ['Sumber', 'Arjawinangun', 'Astanjapura', 'Ciledug', 'Kedawung', 'Losari', 'Palimanan', 'Plumbon', 'Weru'] },
+      { name: 'Kota Cirebon', type: 'Kota', districts: ['Harjamukti', 'Kejaksaan', 'Kesambi', 'Lemahwungkuk', 'Pekalipan'] },
+      { name: 'Kabupaten Indramayu', type: 'Kabupaten', districts: ['Indramayu', 'Anjatan', 'Haurgeulis', 'Jatibarang', 'Karangampel', 'Krangkeng', 'Lohbener'] },
+      { name: 'Kabupaten Majalengka', type: 'Kabupaten', districts: ['Majalengka', 'Cigasong', 'Jatiwangi', 'Kadipaten', 'Kertajati', 'Rajagaluh', 'Sumberjaya'] },
+      { name: 'Kabupaten Kuningan', type: 'Kabupaten', districts: ['Kuningan', 'Bandorasa', 'Ciawigebang', 'Cilimus', 'Kadugede', 'Luragung'] },
+      { name: 'Kabupaten Garut', type: 'Kabupaten', districts: ['Garut Kota', 'Bayongbong', 'Cibatu', 'Cikajang', 'Leles', 'Limbangan', 'Tarogong Kaler', 'Tarogong Kidul'] },
+      { name: 'Kabupaten Tasikmalaya', type: 'Kabupaten', districts: ['Singaparna', 'Ciawi', 'Cikatomas', 'Cipatujah', 'Manonjaya', 'Rajapolah', 'Sukaraja'] },
+      { name: 'Kota Tasikmalaya', type: 'Kota', districts: ['Bungursari', 'Cihideung', 'Cipedes', 'Indihiang', 'Kawalu', 'Mangkubumi', 'Tawang'] },
+      { name: 'Kabupaten Ciamis', type: 'Kabupaten', districts: ['Ciamis', 'Banjarsari', 'Baregbeg', 'Cikoneng', 'Kawali', 'Panumbangan'] },
+      { name: 'Kota Banjar', type: 'Kota', districts: ['Banjar', 'Langensari', 'Pataruman', 'Purwaharja'] },
+      { name: 'Kabupaten Pangandaran', type: 'Kabupaten', districts: ['Pangandaran', 'Cijulang', 'Cimerak', 'Kalipucang', 'Parigi'] },
+      { name: 'Kabupaten Sukabumi', type: 'Kabupaten', districts: ['Palabuhanratu', 'Cibadak, Cicurug', 'Cisaat', 'Jampang Kulon', 'Parungkuda'] },
+      { name: 'Kota Sukabumi', type: 'Kota', districts: ['Baros', 'Cibeureum', 'Cikole', 'Citamiang', 'Gunungpuyuh', 'Lembursitu', 'Warudoyong'] },
+      { name: 'Kabupaten Cianjur', type: 'Kabupaten', districts: ['Cianjur', 'Cipanas', 'Ciranjang', 'Karangtengah', 'Pacet', 'Warungkondang'] },
+    ],
+  },
+  {
+    name: 'Banten',
+    baseRateJnt: 14000,
+    baseRateJne: 13000,
+    baseRatePos: 11000,
+    baseRateSicepat: 13500,
+    baseRateAnteraja: 13000,
+    baseRateWahana: 9000,
+    cities: [
+      { name: 'Kota Tangerang', type: 'Kota', districts: ['Batuceper', 'Benda', 'Cibodas', 'Ciledug', 'Cipondoh', 'Jatiuwung', 'Karangtengah', 'Karawaci', 'Larangan', 'Neglasari', 'Periuk', 'Pinang', 'Tangerang'] },
+      { name: 'Kota Tangerang Selatan', type: 'Kota', districts: ['Ciputat', 'Ciputat Timur', 'Pamulang', 'Pondok Aren (Bintaro)', 'Serpong (BSD)', 'Serpong Utara', 'Setu'] },
+      { name: 'Kabupaten Tangerang', type: 'Kabupaten', districts: ['Balaraja', 'Cikupa', 'Cisauk', 'Curug', 'Kelapa Dua', 'Kosambi', 'Pasar Kemis', 'Rajeg', 'Sepatan', 'Solear', 'Teluknaga', 'Tigaraksa'] },
+      { name: 'Kota Serang', type: 'Kota', districts: ['Cipocok Jaya', 'Curug', 'Kasemen', 'Serang', 'Taktakan', 'Walantaka'] },
+      { name: 'Kabupaten Serang', type: 'Kabupaten', districts: ['Ciruas', 'Anyar', 'Bojonegara', 'Cikande', 'Kramatwatu', 'Padarincang'] },
+      { name: 'Kota Cilegon', type: 'Kota', districts: ['Cibeber', 'Cilegon', 'Citangkil', 'Ciwandan', 'Grogol', 'Jombang', 'Pulomerak', 'Purwakarta'] },
+      { name: 'Kabupaten Lebak', type: 'Kabupaten', districts: ['Rangkasbitung', 'Bayah', 'Cibadak', 'Malingping', 'Warunggunung'] },
+      { name: 'Kabupaten Pandeglang', type: 'Kabupaten', districts: ['Pandeglang', 'Carita', 'Labuan', 'Menes', 'Panimbang'] },
+    ],
+  },
+  {
+    name: 'DI Yogyakarta',
+    baseRateJnt: 11000,
+    baseRateJne: 10000,
+    baseRatePos: 9000,
+    baseRateSicepat: 10500,
+    baseRateAnteraja: 10000,
+    baseRateWahana: 7000,
+    cities: [
+      { name: 'Kota Yogyakarta', type: 'Kota', districts: ['Danamurejan', 'Gedongtengen', 'Gondokusuman', 'Gondomanan', 'Jetis', 'Kotagede', 'Kraton', 'Mantrijeron', 'Mergangsan', 'Ngampilan', 'Pakualaman', 'Tegalrejo', 'Umbulharjo', 'Wirobrajan'] },
+      { name: 'Kabupaten Sleman', type: 'Kabupaten', districts: ['Depok (Gejayan/Babarsari)', 'Gamping', 'Godean', 'Kalasan', 'Mlati', 'Ngaglik', 'Ngemplak', 'Prambanan', 'Sleman', 'Tempel'] },
+      { name: 'Kabupaten Bantul', type: 'Kabupaten', districts: ['Bantul', 'Bambanglipuro', 'Banguntapan', 'Kasihan', 'Imogiri', 'Piyungan', 'Sewon', 'Srandakan'] },
+      { name: 'Kabupaten Kulon Progo', type: 'Kabupaten', districts: ['Wates', 'Galur', 'Kalibawang', 'Lendah', 'Nanggulan', 'Pengasih', 'Temon'] },
+      { name: 'Kabupaten Gunungkidul', type: 'Kabupaten', districts: ['Wonosari', 'Karangmojo', 'Nglipar', 'Paliyan', 'Patuk', 'Playen', 'Semanu'] },
+    ],
+  },
+  {
+    name: 'Jawa Timur',
+    baseRateJnt: 15000,
+    baseRateJne: 14000,
+    baseRatePos: 12000,
+    baseRateSicepat: 14500,
+    baseRateAnteraja: 14000,
+    baseRateWahana: 10000,
+    cities: [
+      { name: 'Kota Surabaya', type: 'Kota', districts: ['Gubeng', 'Tegalsari', 'Wonokromo', 'Genteng', 'Bubutan', 'Tambaksari', 'Simokerto', 'Pabean Cantian', 'Semampir', 'Krembangan', 'Sukololo', 'Rungkut', 'Wonocolo', 'Dukuh Pakis', 'Sawahan', 'Jambangan', 'Gayungan', 'Wiyung', 'Karang Pilang', 'Tandes', 'Suko Manunggal', 'Asemrowo', 'Benowo', 'Pakal', 'Lakarsantri', 'Sambikerep'] },
+      { name: 'Kabupaten Sidoarjo', type: 'Kabupaten', districts: ['Sidoarjo', 'Candi', 'Gedangan', 'Krian', 'Porong', 'Sedati (Juanda)', 'Taman', 'Waru'] },
+      { name: 'Kabupaten Gresik', type: 'Kabupaten', districts: ['Gresik', 'Driyorejo', 'Kebomas', 'Menganti', 'Manyar', 'Sidayu'] },
+      { name: 'Kota Malang', type: 'Kota', districts: ['Blimbing', 'Kedungkandang', 'Klojen', 'Lowokwaru', 'Sukun'] },
+      { name: 'Kabupaten Malang', type: 'Kabupaten', districts: ['Kepanjen', 'Ampelgading', 'Batu', 'Dau', 'Lawang', 'Singosari', 'Turen'] },
+      { name: 'Kota Batu', type: 'Kota', districts: ['Batu', 'Bumiaji', 'Junrejo'] },
+      { name: 'Kabupaten Pasuruan', type: 'Kabupaten', districts: ['Bangil', 'Beji', 'Gempol', 'Pandaan', 'Prigen', 'Purwosari'] },
+      { name: 'Kota Pasuruan', type: 'Kota', districts: ['Bugul Kidul', 'Gadingrejo', 'Panggungrejo', 'Purworejo'] },
+      { name: 'Kabupaten Mojokerto', type: 'Kabupaten', districts: ['Mojosari', 'Dlanggu', 'Gedeg', 'Jatisrono', 'Mojoanyar', 'Ngoro', 'Pungging'] },
+      { name: 'Kota Mojokerto', type: 'Kota', districts: ['Kranggan', 'Magersari', 'Prajurit Kulon'] },
+      { name: 'Kabupaten Jombang', type: 'Kabupaten', districts: ['Jombang', 'Diwek', 'Mojoagung', 'Ploso', 'Peterongan'] },
+      { name: 'Kabupaten Kediri', type: 'Kabupaten', districts: ['Pare', 'Grogol', 'Kandangan', 'Ngadiluwih', 'Papar', 'Wates'] },
+      { name: 'Kota Kediri', type: 'Kota', districts: ['Kediri Kota', 'Mojoroto', 'Pesantren'] },
+      { name: 'Kabupaten Madiun', type: 'Kabupaten', districts: ['Caruban', 'Balerejo', 'Dagangan', 'Geger', 'Jiwan', 'Mejayan'] },
+      { name: 'Kota Madiun', type: 'Kota', districts: ['Kartoharjo', 'Manguharjo', 'Taman'] },
+      { name: 'Kabupaten Jember', type: 'Kabupaten', districts: ['Jember Kota', 'Ajung', 'Ambulu', 'Balung', 'Kaliwates', 'Patrang', 'Sumbersari', 'Tanggul'] },
+      { name: 'Kabupaten Banyuwangi', type: 'Kabupaten', districts: ['Banyuwangi', 'Genting', 'Giri', 'Glagah', 'Kalipuro', 'Rogojampi', 'Srono'] },
+      { name: 'Kabupaten Bojonegoro', type: 'Kabupaten', districts: ['Bojonegoro', 'Baureno', 'Dander', 'Kalitidu', 'Kapas', 'Sumberrejo'] },
+      { name: 'Kabupaten Tuban', type: 'Kabupaten', districts: ['Tuban', 'Bancar', 'Jatirogo', 'Merakurak', 'Palang', 'Semanding'] },
+      { name: 'Kabupaten Lamongan', type: 'Kabupaten', districts: ['Lamongan', 'Babat', 'Deket', 'Kembangbahu', 'Paciran', 'Tikung'] },
+      { name: 'Kabupaten Madura (Bangkalan/Sampang/Pamekasan/Sumenep)', type: 'Kabupaten', cityFeeAdjustment: 3000, districts: ['Bangkalan', 'Kamal', 'Sampang', 'Pamekasan', 'Sumenep', 'Kalianget'] },
+    ],
+  },
+  {
+    name: 'Bali & NTB',
+    baseRateJnt: 24000,
+    baseRateJne: 22000,
+    baseRatePos: 20000,
+    baseRateSicepat: 23000,
+    baseRateAnteraja: 22000,
+    baseRateWahana: 16000,
+    cities: [
+      { name: 'Kota Denpasar', type: 'Kota', districts: ['Denpasar Selatan', 'Denpasar Barat', 'Denpasar Utara', 'Denpasar Timur'] },
+      { name: 'Kabupaten Badung (Kuta/Jimbaran/Canggu)', type: 'Kabupaten', districts: ['Kuta', 'Kuta Utara (Canggu)', 'Kuta Selatan (Jimbaran/Nusa Dua)', 'Mengwi', 'Abiansemal'] },
+      { name: 'Kabupaten Gianyar (Ubud)', type: 'Kabupaten', districts: ['Ubud', 'Gianyar', 'Sukawati', 'Blahbatuh'] },
+      { name: 'Kabupaten Tabanan', type: 'Kabupaten', districts: ['Tabanan', 'Kediri', 'Marga', 'Baturiti'] },
+      { name: 'Kabupaten Buleleng (Singaraja)', type: 'Kabupaten', districts: ['Singaraja', 'Banjar', 'Seririt', 'Sukasada'] },
+      { name: 'Kota Mataram (Lombok)', type: 'Kota', districts: ['Ampenan', 'Cakranegara', 'Mataram', 'Sekarbela', 'Selaparang'] },
+      { name: 'Kabupaten Lombok Barat', type: 'Kabupaten', districts: ['Gerung', 'Gunungsari', 'Kediri', 'Lembar', 'Narmada'] },
+    ],
+  },
+  {
+    name: 'Nusa Tenggara Timur (NTT)',
+    baseRateJnt: 35000,
+    baseRateJne: 32000,
+    baseRatePos: 30000,
+    baseRateSicepat: 33000,
+    baseRateAnteraja: 32000,
+    baseRateWahana: 25000,
+    cities: [
+      { name: 'Kota Kupang', type: 'Kota', districts: ['Alak', 'Kelapa Lima', 'Kota Raja', 'Maulafa', 'Oebobo'] },
+      { name: 'Kabupaten Manggarai Barat (Labuan Bajo)', type: 'Kabupaten', districts: ['Komodo (Labuan Bajo)', 'Lembor', 'Macang Pacar'] },
+      { name: 'Kabupaten Ende', type: 'Kabupaten', districts: ['Ende', 'Ende Selatan', 'Ende Timur'] },
+      { name: 'Kabupaten Sikka (Maumere)', type: 'Kabupaten', districts: ['Alok', 'Alok Barat', 'Alok Timur'] },
+    ],
+  },
+  {
+    name: 'Sumatera Utara & Aceh',
+    baseRateJnt: 34000,
+    baseRateJne: 32000,
+    baseRatePos: 29000,
+    baseRateSicepat: 32000,
+    baseRateAnteraja: 31000,
+    baseRateWahana: 24000,
+    cities: [
+      { name: 'Kota Medan', type: 'Kota', districts: ['Medan Amplas', 'Medan Area', 'Medan Barat', 'Medan Deli', 'Medan Helvetia', 'Medan Johor', 'Medan Kota', 'Medan Marelan', 'Medan Petisah', 'Medan Selayang', 'Medan Sunggal', 'Medan Tembung'] },
+      { name: 'Kabupaten Deli Serdang', type: 'Kabupaten', districts: ['Lubuk Pakam', 'Batang Kuis', 'Percut Sei Tuan', 'Sunggal', 'Tanjung Morawa'] },
+      { name: 'Kota Binjai', type: 'Kota', districts: ['Binjai Barat', 'Binjai Kota', 'Binjai Selatan', 'Binjai Timur', 'Binjai Utara'] },
+      { name: 'Kota Pematangsiantar', type: 'Kota', districts: ['Siantar Barat', 'Siantar Selatan', 'Siantar Timur', 'Siantar Utara'] },
+      { name: 'Kota Banda Aceh', type: 'Kota', districts: ['Baiturrahman', 'Banda Raya', 'Lueng Bata', 'Meuraxa', 'Syiah Kuala', 'Ulee Kareng'] },
+    ],
+  },
+  {
+    name: 'Sumatera Selatan & Lampung',
+    baseRateJnt: 26000,
+    baseRateJne: 24000,
+    baseRatePos: 22000,
+    baseRateSicepat: 24500,
+    baseRateAnteraja: 24000,
+    baseRateWahana: 18000,
+    cities: [
+      { name: 'Kota Palembang', type: 'Kota', districts: ['Alang-Alang Lebar', 'Bukit Kecil', 'Ilir Barat I', 'Ilir Barat II', 'Ilir Timur I', 'Ilir Timur II', 'Kalidoni', 'Kemuning', 'Plaju', 'Sako', 'Seberang Ulu I', 'Seberang Ulu II', 'Sukarami'] },
+      { name: 'Kota Bandar Lampung', type: 'Kota', districts: ['Bumi Waras', 'Enggal', 'Kedaton', 'Kemiling', 'Labuhan Ratu', 'Panjang', 'Rajabasa', 'Sukabumi', 'Tanjung Karang Barat', 'Tanjung Karang Pusat', 'Teluk Betung Selatan'] },
+      { name: 'Kota Metro', type: 'Kota', districts: ['Metro Barat', 'Metro Pusat', 'Metro Selatan', 'Metro Timur', 'Metro Utara'] },
+      { name: 'Kabupaten Lampung Selatan', type: 'Kabupaten', districts: ['Kalianda', 'Jati Agung', 'Natar', 'Sidomulyo'] },
+    ],
+  },
+  {
+    name: 'Sumatera Barat, Riau & Kep. Riau',
+    baseRateJnt: 30000,
+    baseRateJne: 28000,
+    baseRatePos: 26000,
+    baseRateSicepat: 28500,
+    baseRateAnteraja: 28000,
+    baseRateWahana: 22000,
+    cities: [
+      { name: 'Kota Pekanbaru', type: 'Kota', districts: ['Bukit Raya', 'Lima Puluh', 'Marpoyan Damai', 'Payung Sekaki', 'Pekanbaru Kota', 'Rumbai', 'Sail', 'Senapelan', 'Tampan', 'Tenayan Raya'] },
+      { name: 'Kota Batam', type: 'Kota', districts: ['Batam Kota', 'Batu Ampar', 'Bengkong', 'Batam Center', 'Lubuk Baja (Nagoya)', 'Nongsa', 'Sekupang'] },
+      { name: 'Kota Padang', type: 'Kota', districts: ['Bungus Teluk Kabung', 'Koto Tangah', 'Kuranji', 'Lubuk Begalung', 'Lubuk Kilangan', 'Nanggalo', 'Padang Barat', 'Padang Selatan', 'Padang Timur', 'Padang Utara', 'Pauh'] },
+      { name: 'Kota Bukittinggi', type: 'Kota', districts: ['Guguk Panjang', 'Mandiangin Koto Selayan', 'Aur Birugo Tigo Baleh'] },
+    ],
+  },
+  {
+    name: 'Kalimantan (Seluruh Provinsi)',
+    baseRateJnt: 37000,
+    baseRateJne: 35000,
+    baseRatePos: 32000,
+    baseRateSicepat: 35000,
+    baseRateAnteraja: 34000,
+    baseRateWahana: 27000,
+    cities: [
+      { name: 'Kota Banjarmasin', type: 'Kota', districts: ['Banjarmasin Barat', 'Banjarmasin Selatan', 'Banjarmasin Tengah', 'Banjarmasin Timur', 'Banjarmasin Utara'] },
+      { name: 'Kota Banjarbaru', type: 'Kota', districts: ['Banjarbaru Selatan', 'Banjarbaru Utara', 'Cempaka', 'Landasan Ulin'] },
+      { name: 'Kota Balikpapan', type: 'Kota', districts: ['Balikpapan Barat', 'Balikpapan Kota', 'Balikpapan Selatan', 'Balikpapan Tengah', 'Balikpapan Timur', 'Balikpapan Utara'] },
+      { name: 'Kota Samarinda', type: 'Kota', districts: ['Loa Janan Ilir', 'Palaran', 'Samarinda Ilir', 'Samarinda Kota', 'Samarinda Seberang', 'Samarinda Utara', 'Sungai Kunjang'] },
+      { name: 'Kota Pontianak', type: 'Kota', districts: ['Pontianak Barat', 'Pontianak Kota', 'Pontianak Selatan', 'Pontianak Tenggara', 'Pontianak Timur', 'Pontianak Utara'] },
+      { name: 'Kota Palangkaraya', type: 'Kota', districts: ['Bukit Batu', 'Jekan Raya', 'Pahangut', 'Sebangau'] },
+    ],
+  },
+  {
+    name: 'Sulawesi (Seluruh Provinsi)',
+    baseRateJnt: 42000,
+    baseRateJne: 39000,
+    baseRatePos: 36000,
+    baseRateSicepat: 40000,
+    baseRateAnteraja: 39000,
+    baseRateWahana: 31000,
+    cities: [
+      { name: 'Kota Makassar', type: 'Kota', districts: ['Biringkanaya', 'Bontoala', 'Makassar', 'Mamajang', 'Manggala', 'Mariso', 'Panakkukang', 'Rappocini', 'Tallo', 'Tamalanrea', 'Tamalate', 'Ujung Pandang', 'Ujung Tanah', 'Wajo'] },
+      { name: 'Kota Manado', type: 'Kota', districts: ['Bunaken', 'Malalayang', 'Mapanget', 'Sario', 'Singkil', 'Tikala', 'Tuminting', 'Wenang'] },
+      { name: 'Kota Palu', type: 'Kota', districts: ['Palu Barat', 'Palu Selatan', 'Palu Timur', 'Palu Utara', 'Tatanga', 'Tawaeli'] },
+      { name: 'Kota Kendari', type: 'Kota', districts: ['Abeli', 'Baruga', 'Kadia', 'Kambu', 'Kendari', 'Kendari Barat', 'Mandonga', 'Poasia', 'Puuwatu', 'Wua-Wua'] },
+      { name: 'Kota Gorontalo', type: 'Kota', districts: ['Dumbo Raya', 'Dungingi', 'Kota Barat', 'Kota Selatan', 'Kota Tengah', 'Kota Timur', 'Kota Utara'] },
+    ],
+  },
+  {
+    name: 'Maluku & Papua (Seluruh Provinsi)',
+    baseRateJnt: 58000,
+    baseRateJne: 55000,
+    baseRatePos: 48000,
+    baseRateSicepat: 54000,
+    baseRateAnteraja: 52000,
+    baseRateWahana: 42000,
+    cities: [
+      { name: 'Kota Jayapura', type: 'Kota', districts: ['Abepura', 'Heram', 'Jayapura Selatan', 'Jayapura Utara', 'Muara Tami'] },
+      { name: 'Kota Ambon', type: 'Kota', districts: ['Baguala', 'Leitimur Selatan', 'Nusaniwe', 'Sirimau', 'Teluk Ambon'] },
+      { name: 'Kota Sorong', type: 'Kota', districts: ['Sorong', 'Sorong Barat', 'Sorong Kepulauan', 'Sorong Manoi', 'Sorong Timur', 'Sorong Utara'] },
+      { name: 'Kabupaten Merauke', type: 'Kabupaten', districts: ['Merauke', 'Kurik', 'Muting', 'Sota'] },
+    ],
+  },
+];
+
+// Helper Functions
+export function getProvinceNames(): string[] {
+  return INDONESIA_REGIONS.map((p) => p.name);
+}
+
+export function getCitiesByProvince(provinceName: string): RegionCity[] {
+  const p = INDONESIA_REGIONS.find((item) => item.name === provinceName);
+  return p ? p.cities : INDONESIA_REGIONS[0].cities;
+}
+
+export function getDistrictsByCity(provinceName: string, cityName: string): string[] {
+  const cities = getCitiesByProvince(provinceName);
+  const c = cities.find((item) => item.name === cityName);
+  return c ? c.districts : (cities[0]?.districts || ['Kecamatan Pusat']);
+}

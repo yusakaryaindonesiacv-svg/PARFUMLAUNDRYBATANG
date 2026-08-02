@@ -1,0 +1,10 @@
+{
+  "name": "Remix Remix Parfum Laundry Batang",
+  "description": "Aplikasi Toko Online \u0026 POS Parfum Laundry Batang terintegrasi dengan Stok, CRM, Kasir, Laporan Laba Rugi, Kurir Distance, Pakasir, Supabase \u0026 Google Sheets.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
