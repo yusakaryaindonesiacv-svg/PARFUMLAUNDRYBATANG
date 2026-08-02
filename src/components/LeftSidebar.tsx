@@ -48,6 +48,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   const allNavItems = [
     { id: 'home', label: 'Beranda Toko', icon: Home, badge: '', show: permissions.canAccessHome },
     { id: 'catalog', label: 'Katalog Produk', icon: ShoppingBag, badge: 'Lengkap', show: permissions.canAccessCatalog },
+    { id: 'account', label: 'Akun Saya', icon: UserCheck, badge: 'Profil', show: true },
     { id: 'pos', label: 'Kasir POS Off/Online', icon: Calculator, badge: 'Kasir', show: permissions.canAccessPos },
     { id: 'tracking', label: 'Tracking Pesanan', icon: Truck, badge: 'Cek Resi', show: permissions.canAccessTracking },
     { id: 'admin', label: 'Panel Admin Store', icon: ShieldCheck, badge: 'Admin', show: permissions.canAccessAdmin },
@@ -78,20 +79,16 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
               onClick={() => setActiveTab('home')}
               className="flex items-center gap-3 cursor-pointer overflow-hidden"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-extrabold flex items-center justify-center text-lg shadow-md shrink-0 overflow-hidden">
-                {settings.appLogoUrl ? (
-                  <img src={settings.appLogoUrl} alt={settings.storeName} className="w-full h-full object-cover" />
-                ) : (
-                  settings.storeName ? settings.storeName.charAt(0).toUpperCase() : 'P'
-                )}
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-extrabold flex items-center justify-center text-lg shadow-md shrink-0">
+                P
               </div>
               {isOpen && (
                 <div className="truncate">
-                  <h2 className="font-extrabold text-xs sm:text-sm text-slate-800 dark:text-white leading-tight truncate">
-                    {settings.storeName || 'PARFUM LAUNDRY BATANG'}
+                  <h2 className="font-extrabold text-sm text-slate-800 dark:text-white leading-tight truncate">
+                    PARFUM LAUNDRY
                   </h2>
-                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 block tracking-wider truncate">
-                    {settings.city ? `${settings.city.toUpperCase()} STORE` : 'ONLINE STORE'}
+                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 block tracking-wider">
+                    BATANG STORE
                   </span>
                 </div>
               )}
