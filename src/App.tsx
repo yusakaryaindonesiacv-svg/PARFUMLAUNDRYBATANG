@@ -44,7 +44,7 @@ import { DistanceCalculatorModal } from './components/DistanceCalculatorModal';
 import { AdminPanel } from './components/AdminPanel';
 import { AuthModal } from './components/AuthModal';
 import { DeploymentGuideModal } from './components/DeploymentGuideModal';
-import { AccountDashboard } from './components/AccountDashboard';
+import { InstallPwaModal } from './components/InstallPwaModal';
 
 export default function App() {
   // Initialize LocalStorage with default seeds on first load & fetch Supabase remote data if available
@@ -153,9 +153,27 @@ export default function App() {
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const [isDeploymentGuideOpen, setIsDeploymentGuideOpen] = useState<boolean>(false);
 
-  // PWA Deferred Install Prompt State
+  // PWA Deferred Install Prompt & Installation State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showPwaBanner, setShowPwaBanner] = useState<boolean>(true);
+  const [isPwaInstalled, setIsPwaInstalled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const isStandaloneMode =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true ||
+      document.referrer.includes('android-app://');
+    const storedInstallState = localStorage.getItem('pwa_installed') === 'true';
+    return isStandaloneMode || storedInstallState;
+  });
+  const [showPwaBanner, setShowPwaBanner] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const isStandaloneMode =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true ||
+      document.referrer.includes('android-app://');
+    const storedInstallState = localStorage.getItem('pwa_installed') === 'true';
+    return !(isStandaloneMode || storedInstallState);
+  });
+  const [isInstallPwaOpen, setIsInstallPwaOpen] = useState<boolean>(false);
 
   // Calculate effective permissions for active user
   const userPermissions = getEffectivePermissions(currentUser);
@@ -271,22 +289,122 @@ export default function App() {
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
-      document.body.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
-      document.body.classList.remove('dark');
     }
     setStorageData(STORAGE_KEYS.DARK_MODE, darkMode);
   }, [darkMode]);
 
-  // Listen for PWA beforeinstallprompt event
+  // Dynamic favicon, title, and PWA Web Manifest generator for Mobile Install Icon
+  useEffect(() => {
+    if (settings.storeName) {
+      document.title = settings.storeName;
+    }
+
+    // Favicon link
+    let faviconLink = document.querySelector<HTMLLinkElement>("link[rel='icon']");
+    if (!faviconLink) {
+      faviconLink = document.createElement('link');
+      faviconLink.rel = 'icon';
+      document.head.appendChild(faviconLink);
+    }
+    if (settings.appLogoUrl) {
+      faviconLink.href = settings.appLogoUrl;
+    }
+
+    // Apple Touch Icon link (for iOS Safari Home Screen)
+    let appleTouchIconLink = document.querySelector<HTMLLinkElement>("link[rel='apple-touch-icon']");
+    if (!appleTouchIconLink) {
+      appleTouchIconLink = document.createElement('link');
+      appleTouchIconLink.rel = 'apple-touch-icon';
+      document.head.appendChild(appleTouchIconLink);
+    }
+    if (settings.appLogoUrl) {
+      appleTouchIconLink.href = settings.appLogoUrl;
+    }
+
+    // Web App Manifest link (for Android / PWA Home Screen Install Icon)
+    const iconSrc = settings.appLogoUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%234f46e5"/><text x="50" y="65" font-size="50" font-weight="bold" text-anchor="middle" fill="white">P</text></svg>';
+    
+    const manifestData = {
+      name: settings.storeName || 'Parfum Laundry Batang',
+      short_name: settings.storeName ? (settings.storeName.length > 12 ? settings.storeName.substring(0, 12) : settings.storeName) : 'Parfum Laundry',
+      description: settings.tagline || 'Aplikasi Kasir & Pemesanan Parfum Laundry',
+      start_url: '/',
+      display: 'standalone',
+      background_color: '#0f172a',
+      theme_color: '#4f46e5',
+      icons: [
+        {
+          src: iconSrc,
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any maskable'
+        },
+        {
+          src: iconSrc,
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any maskable'
+        }
+      ]
+    };
+
+    const blob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+    const manifestObjectUrl = URL.createObjectURL(blob);
+
+    let manifestLink = document.querySelector<HTMLLinkElement>("link[rel='manifest']");
+    if (!manifestLink) {
+      manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      document.head.appendChild(manifestLink);
+    }
+    manifestLink.href = manifestObjectUrl;
+
+    return () => {
+      URL.revokeObjectURL(manifestObjectUrl);
+    };
+  }, [settings.appLogoUrl, settings.storeName, settings.tagline]);
+
+  // Listen for PWA beforeinstallprompt and appinstalled events
   useEffect(() => {
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
     };
+
+    const handleAppInstalled = () => {
+      console.log('App successfully installed as PWA');
+      setIsPwaInstalled(true);
+      setShowPwaBanner(false);
+      setIsInstallPwaOpen(false);
+      localStorage.setItem('pwa_installed', 'true');
+    };
+
+    // Check matchMedia for standalone changes
+    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        setIsPwaInstalled(true);
+        setShowPwaBanner(false);
+        setIsInstallPwaOpen(false);
+        localStorage.setItem('pwa_installed', 'true');
+      }
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleMediaChange);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleMediaChange);
+      }
+    };
   }, []);
 
   const handleInstallPWA = () => {
@@ -295,11 +413,15 @@ export default function App() {
       deferredPrompt.userChoice.then((choiceResult: any) => {
         if (choiceResult.outcome === 'accepted') {
           console.log('User accepted PWA installation');
+          setIsPwaInstalled(true);
+          setShowPwaBanner(false);
+          setIsInstallPwaOpen(false);
+          localStorage.setItem('pwa_installed', 'true');
         }
         setDeferredPrompt(null);
       });
     } else {
-      alert('Aplikasi siap di-install! Di browser seluler, ketik "Tambahkan ke Layar Utama" (Add to Home Screen).');
+      setIsInstallPwaOpen(true);
     }
   };
 
@@ -424,6 +546,7 @@ export default function App() {
         onOpenAuth={() => setIsAuthOpen(true)}
         onLogout={() => setCurrentUser(null)}
         onOpenDistanceCalc={() => setIsDistanceCalcOpen(true)}
+        onOpenInstallPwa={isPwaInstalled ? undefined : () => setIsInstallPwaOpen(true)}
         cartCount={cartCount}
         onOpenCart={() => setIsCartOpen(true)}
         settings={settings}
@@ -433,7 +556,7 @@ export default function App() {
       <div className={`transition-all duration-300 ease-in-out ${isLeftSidebarOpen ? 'lg:pl-64' : 'lg:pl-20'}`}>
         
         {/* PWA Install Banner */}
-        {showPwaBanner && (
+        {!isPwaInstalled && showPwaBanner && (
           <div className="bg-gradient-to-r from-purple-700 to-indigo-700 text-white px-4 py-2 text-xs flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2">
               <span className="font-bold">📱 Mode Progressive Web App (PWA) Ready!</span>
@@ -469,6 +592,7 @@ export default function App() {
           onOpenAuth={() => setIsAuthOpen(true)}
           onOpenAdmin={() => setActiveTab('admin')}
           onOpenDistanceCalc={() => setIsDistanceCalcOpen(true)}
+          onOpenInstallPwa={isPwaInstalled ? undefined : () => setIsInstallPwaOpen(true)}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           searchQuery={searchQuery}
@@ -511,22 +635,11 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'account' && (
-            <AccountDashboard
-              currentUser={currentUser}
-              orders={orders}
-              customers={customers}
-              settings={settings}
-              onOpenAuth={() => setIsAuthOpen(true)}
-              onLogout={() => setCurrentUser(null)}
-              setActiveTab={setActiveTab}
-            />
-          )}
-
           {activeTab === 'pos' && userPermissions.canAccessPos && (
             <PosKasir
               products={products}
               customers={customers}
+              settings={settings}
               onCompleteSale={handleCompletePosSale}
             />
           )}
@@ -634,6 +747,14 @@ export default function App() {
       <DeploymentGuideModal
         isOpen={isDeploymentGuideOpen}
         onClose={() => setIsDeploymentGuideOpen(false)}
+      />
+
+      <InstallPwaModal
+        isOpen={isInstallPwaOpen}
+        onClose={() => setIsInstallPwaOpen(false)}
+        deferredPrompt={deferredPrompt}
+        onTriggerInstall={handleInstallPWA}
+        settings={settings}
       />
 
     </div>
