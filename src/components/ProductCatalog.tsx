@@ -153,7 +153,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
               .reduce((sum, item) => sum + item.quantity, 0);
 
             const realSoldCount = (product.salesCount || 0) + ordersSalesCount;
-            const variantSummary = product.volumes.map((v) => v.name.split(' ')[0]).join(', ');
+            const variantSummary = product.volumes.map((v) => v.name).join(', ');
 
             return (
               <div
