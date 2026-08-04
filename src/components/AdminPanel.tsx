@@ -3076,6 +3076,79 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             />
                           </div>
                         </div>
+
+                        {/* Foto / Gambar Varian Khusus Section */}
+                        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+                          <label className="block text-[10px] font-bold text-indigo-700 dark:text-indigo-300 flex items-center justify-between">
+                            <span>Foto / Gambar Khusus Varian Ini (Opsional):</span>
+                            {vol.imageUrl ? (
+                              <span className="text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-1.5 py-0.5 rounded">✓ Foto Custom Aktif</span>
+                            ) : (
+                              <span className="text-[9px] text-slate-400 font-normal">Mengikuti Foto Utama Produk</span>
+                            )}
+                          </label>
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                            <input
+                              type="text"
+                              placeholder="URL Gambar Varian (https://...) atau Upload File"
+                              value={vol.imageUrl || ''}
+                              onChange={(e) => {
+                                const updated = [...prodVolumes];
+                                updated[idx].imageUrl = e.target.value;
+                                setProdVolumes(updated);
+                              }}
+                              className="w-full bg-slate-50 dark:bg-slate-800 text-[11px] px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-mono text-slate-800 dark:text-slate-200"
+                            />
+                            <label className="shrink-0 cursor-pointer px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all">
+                              <Upload className="w-3 h-3" />
+                              <span>Upload Varian</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      if (typeof reader.result === 'string') {
+                                        const updated = [...prodVolumes];
+                                        updated[idx].imageUrl = reader.result;
+                                        setProdVolumes(updated);
+                                      }
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </label>
+                            {vol.imageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...prodVolumes];
+                                  updated[idx].imageUrl = '';
+                                  setProdVolumes(updated);
+                                }}
+                                className="shrink-0 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-rose-500 rounded-xl text-[10px] font-bold transition-all"
+                              >
+                                Reset Foto
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Preview thumbnail inside variant box */}
+                          <div className="flex items-center gap-2 pt-1">
+                            <img
+                              src={vol.imageUrl || prodImageUrl || 'https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?auto=format&fit=crop&q=80&w=600'}
+                              alt={`Preview Varian ${vol.name}`}
+                              className="w-9 h-9 object-cover rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0"
+                            />
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+                              {vol.imageUrl ? `Preview foto varian "${vol.name}"` : `Menggunakan foto utama produk`}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     ))
                   )}
