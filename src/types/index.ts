@@ -10,6 +10,7 @@ export interface VolumeOption {
   wholesaleMinQty: number; // e.g. 5 units
   cogs: number; // Modal / HPP
   stock: number;
+  imageUrl?: string; // Foto / Gambar khusus varian ini (opsional)
 }
 
 export interface Product {
