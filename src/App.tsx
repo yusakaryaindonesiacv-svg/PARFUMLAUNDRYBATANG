@@ -27,7 +27,8 @@ import {
   fetchOrdersFromSupabase,
   fetchSettingsFromSupabase,
   upsertUserToSupabase, 
-  upsertCustomerToSupabase 
+  upsertCustomerToSupabase,
+  withTimeout 
 } from './lib/supabase';
 
 // Components
@@ -48,92 +49,6 @@ import { DeploymentGuideModal } from './components/DeploymentGuideModal';
 import { InstallPwaModal } from './components/InstallPwaModal';
 
 export default function App() {
-  // Initialize LocalStorage with default seeds on first load & fetch Supabase remote data if available
-  useEffect(() => {
-    initLocalStorage();
-
-    // 1. Fetch Categories from Supabase
-    fetchCategoriesFromSupabase().then(remoteCategories => {
-      if (remoteCategories !== null) {
-        setCategories(remoteCategories);
-        setStorageData(STORAGE_KEYS.CATEGORIES, remoteCategories);
-      }
-    }).catch(err => console.warn('Supabase categories fetch error:', err));
-
-    // 2. Fetch Products from Supabase
-    fetchProductsFromSupabase().then(remoteProducts => {
-      if (remoteProducts !== null) {
-        setProducts(remoteProducts);
-        setStorageData(STORAGE_KEYS.PRODUCTS, remoteProducts);
-      }
-    }).catch(err => console.warn('Supabase products fetch error:', err));
-
-    // 3. Fetch Customers from Supabase
-    fetchCustomersFromSupabase().then(remoteCustomers => {
-      if (remoteCustomers !== null) {
-        setCustomers(remoteCustomers);
-        setStorageData(STORAGE_KEYS.CUSTOMERS, remoteCustomers);
-      }
-    }).catch(err => console.warn('Supabase customers fetch skipped:', err));
-
-    // 4. Fetch Coupons from Supabase
-    fetchCouponsFromSupabase().then(remoteCoupons => {
-      if (remoteCoupons !== null) {
-        setCoupons(remoteCoupons);
-        setStorageData(STORAGE_KEYS.COUPONS, remoteCoupons);
-      }
-    }).catch(err => console.warn('Supabase coupons fetch skipped:', err));
-
-    // 5. Fetch Banners from Supabase
-    fetchBannersFromSupabase().then(remoteBanners => {
-      if (remoteBanners !== null) {
-        setBanners(remoteBanners);
-        setStorageData(STORAGE_KEYS.BANNERS, remoteBanners);
-      }
-    }).catch(err => console.warn('Supabase banners fetch skipped:', err));
-
-    // 6. Fetch Expenses from Supabase
-    fetchExpensesFromSupabase().then(remoteExpenses => {
-      if (remoteExpenses !== null) {
-        setExpenses(remoteExpenses);
-        setStorageData(STORAGE_KEYS.EXPENSES, remoteExpenses);
-      }
-    }).catch(err => console.warn('Supabase expenses fetch skipped:', err));
-
-    // 7. Fetch Orders from Supabase
-    fetchOrdersFromSupabase().then(remoteOrders => {
-      if (remoteOrders !== null) {
-        setOrders(remoteOrders);
-        setStorageData(STORAGE_KEYS.ORDERS, remoteOrders);
-      }
-    }).catch(err => console.warn('Supabase orders fetch skipped:', err));
-
-    // 8. Fetch registered users from Supabase
-    fetchUsersFromSupabase().then(remoteUsers => {
-      if (remoteUsers && remoteUsers.length > 0) {
-        setUsers(prev => {
-          const mergedMap = new Map<string, User>();
-          prev.forEach(u => mergedMap.set(u.id, u));
-          remoteUsers.forEach(ru => mergedMap.set(ru.id, ru));
-          const next = Array.from(mergedMap.values());
-          setStorageData(STORAGE_KEYS.USERS, next);
-          return next;
-        });
-      }
-    }).catch(err => console.warn('Supabase users fetch skipped:', err));
-
-    // 9. Fetch Store Settings from Supabase
-    fetchSettingsFromSupabase().then(remoteSettings => {
-      if (remoteSettings !== null) {
-        setSettings(prev => {
-          const updated = { ...prev, ...remoteSettings };
-          setStorageData(STORAGE_KEYS.SETTINGS, updated);
-          return updated;
-        });
-      }
-    }).catch(err => console.warn('Supabase settings fetch skipped:', err));
-  }, []);
-
   // Application Global State
   const [settings, setSettings] = useState<StoreSettings>(() => getStorageData(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS));
   const [darkMode, setDarkMode] = useState<boolean>(() => getStorageData(STORAGE_KEYS.DARK_MODE, false));
@@ -149,6 +64,92 @@ export default function App() {
   const [orders, setOrders] = useState<Order[]>(() => getStorageData(STORAGE_KEYS.ORDERS, isCleared ? [] : DEFAULT_ORDERS));
   const [banners, setBanners] = useState<CarouselBanner[]>(() => getStorageData(STORAGE_KEYS.BANNERS, isCleared ? [] : DEFAULT_BANNERS));
   const [users, setUsers] = useState<User[]>(() => getStorageData<User[]>(STORAGE_KEYS.USERS, DEFAULT_USERS));
+
+  const [isSyncingSupabase, setIsSyncingSupabase] = useState<boolean>(false);
+
+  // Initialize LocalStorage with default seeds on first load & fetch Supabase remote data concurrently
+  useEffect(() => {
+    initLocalStorage();
+
+    const syncRemoteData = async () => {
+      setIsSyncingSupabase(true);
+      try {
+        const results = await Promise.allSettled([
+          withTimeout(fetchCategoriesFromSupabase(), 8000),
+          withTimeout(fetchProductsFromSupabase(), 8000),
+          withTimeout(fetchCustomersFromSupabase(), 8000),
+          withTimeout(fetchCouponsFromSupabase(), 8000),
+          withTimeout(fetchBannersFromSupabase(), 8000),
+          withTimeout(fetchExpensesFromSupabase(), 8000),
+          withTimeout(fetchOrdersFromSupabase(), 8000),
+          withTimeout(fetchUsersFromSupabase(), 8000),
+          withTimeout(fetchSettingsFromSupabase(), 8000),
+        ]);
+
+        const [catRes, prodRes, custRes, coupRes, bannerRes, expRes, ordRes, userRes, settRes] = results;
+
+        if (catRes.status === 'fulfilled' && catRes.value && catRes.value.length > 0) {
+          setCategories(catRes.value);
+          setStorageData(STORAGE_KEYS.CATEGORIES, catRes.value);
+        }
+
+        if (prodRes.status === 'fulfilled' && prodRes.value && prodRes.value.length > 0) {
+          setProducts(prodRes.value);
+          setStorageData(STORAGE_KEYS.PRODUCTS, prodRes.value);
+        }
+
+        if (custRes.status === 'fulfilled' && custRes.value && custRes.value.length > 0) {
+          setCustomers(custRes.value);
+          setStorageData(STORAGE_KEYS.CUSTOMERS, custRes.value);
+        }
+
+        if (coupRes.status === 'fulfilled' && coupRes.value && coupRes.value.length > 0) {
+          setCoupons(coupRes.value);
+          setStorageData(STORAGE_KEYS.COUPONS, coupRes.value);
+        }
+
+        if (bannerRes.status === 'fulfilled' && bannerRes.value && bannerRes.value.length > 0) {
+          setBanners(bannerRes.value);
+          setStorageData(STORAGE_KEYS.BANNERS, bannerRes.value);
+        }
+
+        if (expRes.status === 'fulfilled' && expRes.value && expRes.value.length > 0) {
+          setExpenses(expRes.value);
+          setStorageData(STORAGE_KEYS.EXPENSES, expRes.value);
+        }
+
+        if (ordRes.status === 'fulfilled' && ordRes.value && ordRes.value.length > 0) {
+          setOrders(ordRes.value);
+          setStorageData(STORAGE_KEYS.ORDERS, ordRes.value);
+        }
+
+        if (userRes.status === 'fulfilled' && userRes.value && userRes.value.length > 0) {
+          setUsers(prev => {
+            const mergedMap = new Map<string, User>();
+            prev.forEach(u => mergedMap.set(u.id, u));
+            userRes.value!.forEach(ru => mergedMap.set(ru.id, ru));
+            const next = Array.from(mergedMap.values());
+            setStorageData(STORAGE_KEYS.USERS, next);
+            return next;
+          });
+        }
+
+        if (settRes.status === 'fulfilled' && settRes.value && Object.keys(settRes.value).length > 0) {
+          setSettings(prev => {
+            const updated = { ...prev, ...settRes.value };
+            setStorageData(STORAGE_KEYS.SETTINGS, updated);
+            return updated;
+          });
+        }
+      } catch (err) {
+        console.warn('Supabase sync error:', err);
+      } finally {
+        setIsSyncingSupabase(false);
+      }
+    };
+
+    syncRemoteData();
+  }, []);
 
   // UI Navigation & Cart States
   const [activeTab, setActiveTab] = useState<string>('home');
