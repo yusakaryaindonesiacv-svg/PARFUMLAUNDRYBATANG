@@ -28,26 +28,47 @@ export interface PakasirDetailResponse {
 }
 
 /**
- * Helper to safely parse JSON responses without throwing Unexpected token errors on HTML pages
+ * Universal Pakasir API Fetcher:
+ * Tries local server proxy first (/api/pakasir/...).
+ * If Express proxy is absent or returns 404 HTML (such as on Vercel static deployments),
+ * it seamlessly falls back to direct client-side fetch to https://app.pakasir.com/api/...
  */
-async function parseJsonSafely(response: Response): Promise<{ isJson: boolean; data: any; rawText: string }> {
+async function fetchPakasirApi(
+  proxyUrl: string,
+  directUrl: string,
+  options: RequestInit
+): Promise<{ ok: boolean; status: number; data: any }> {
+  // 1. Try local Express proxy first
   try {
-    const text = await response.text();
-    try {
-      const data = JSON.parse(text);
-      return { isJson: true, data, rawText: text };
-    } catch {
-      return { isJson: false, data: null, rawText: text };
+    const res = await fetch(proxyUrl, options);
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      return { ok: res.ok, status: res.status, data };
     }
+  } catch (e) {
+    // Ignore proxy error, fallback to direct API
+  }
+
+  // 2. Fallback to direct Pakasir API (for Vercel & static deployments)
+  try {
+    const directRes = await fetch(directUrl, options);
+    const contentType = directRes.headers.get('content-type') || '';
+    let data: any = {};
+    if (contentType.includes('application/json')) {
+      data = await directRes.json();
+    } else {
+      const text = await directRes.text();
+      data = { message: text || 'Pakasir Response Non-JSON' };
+    }
+    return { ok: directRes.ok, status: directRes.status, data };
   } catch (err: any) {
-    return { isJson: false, data: null, rawText: err.message || '' };
+    return { ok: false, status: 500, data: { message: err.message || 'Gagal terhubung ke Pakasir API' } };
   }
 }
 
 /**
  * C.2 API: Transaction Create
- * Calls backend proxy `/api/pakasir/transactioncreate/{method}`
- * If proxy returns non-JSON (e.g. static hosting Vercel 404 HTML), falls back to direct call to app.pakasir.com
  */
 export async function createPakasirTransaction(
   orderNumber: string,
@@ -84,56 +105,18 @@ export async function createPakasirTransaction(
     api_key: apiKey,
   };
 
-  let responseData: any = null;
-  let isRealApiSuccess = false;
-  let lastErrorMessage = '';
-
-  // 1. Try local / Vercel proxy endpoint first
-  try {
-    const proxyRes = await fetch(`/api/pakasir/transactioncreate/${method}`, {
+  const { ok, data } = await fetchPakasirApi(
+    `/api/pakasir/transactioncreate/${method}`,
+    `https://app.pakasir.com/api/transactioncreate/${method}`,
+    {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    });
-
-    const parsed = await parseJsonSafely(proxyRes);
-    if (proxyRes.ok && parsed.isJson && parsed.data && parsed.data.payment) {
-      responseData = parsed.data;
-      isRealApiSuccess = true;
-    } else if (parsed.isJson && parsed.data) {
-      lastErrorMessage = parsed.data.message || parsed.data.error || 'Gagal membuat transaksi Pakasir';
-    } else {
-      lastErrorMessage = 'Proxy /api/pakasir merespon halaman non-JSON (Vercel static 404). Mencoba koneksi langsung...';
     }
-  } catch (err: any) {
-    console.warn('Pakasir proxy fetch error:', err);
-    lastErrorMessage = err.message || 'Gagal terhubung ke proxy local';
-  }
+  );
 
-  // 2. If proxy failed or returned non-JSON, try direct fetch to Pakasir API
-  if (!isRealApiSuccess) {
-    try {
-      const directRes = await fetch(`https://app.pakasir.com/api/transactioncreate/${method}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const parsedDirect = await parseJsonSafely(directRes);
-      if (directRes.ok && parsedDirect.isJson && parsedDirect.data && parsedDirect.data.payment) {
-        responseData = parsedDirect.data;
-        isRealApiSuccess = true;
-      } else if (parsedDirect.isJson && parsedDirect.data) {
-        lastErrorMessage = parsedDirect.data.message || parsedDirect.data.error || lastErrorMessage;
-      }
-    } catch (err: any) {
-      console.warn('Pakasir direct fetch error:', err);
-    }
-  }
-
-  // 3. Process success response
-  if (isRealApiSuccess && responseData && responseData.payment) {
-    const p = responseData.payment;
+  if (ok && data && data.payment) {
+    const p = data.payment;
     const paymentNum = p.payment_number || '';
     const qrCodeUrl = paymentNum ? `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(paymentNum)}` : '';
 
@@ -150,29 +133,30 @@ export async function createPakasirTransaction(
       expiredAt: p.expired_at || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       isRealApi: true,
     };
+  } else {
+    const errMsg = data?.message || data?.error || 'Gagal membuat transaksi Pakasir';
+    console.warn('Pakasir API Response Error:', data);
+    
+    const demoQrString = `00020101021226610016ID.CO.PAKASIR.WWW01189360091800216005230208216005230303UME51440014ID.CO.QRIS.WWW0215ID10243228429300303UME520479295303360540${amount}.005802ID5907Pakasir6012BATANG6304A079`;
+    return {
+      success: true,
+      orderId: orderNumber,
+      project: projectSlug,
+      amount,
+      fee: 0,
+      totalPayment: amount,
+      paymentMethod: method,
+      paymentNumber: demoQrString,
+      qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(demoQrString)}`,
+      expiredAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      isRealApi: false,
+      message: `Pakasir Server Respon: ${errMsg}`,
+    };
   }
-
-  // 4. Fallback if both failed
-  const demoQrString = `00020101021226610016ID.CO.PAKASIR.WWW01189360091800216005230208216005230303UME51440014ID.CO.QRIS.WWW0215ID10243228429300303UME520479295303360540${amount}.005802ID5907Pakasir6012BATANG6304A079`;
-  return {
-    success: true,
-    orderId: orderNumber,
-    project: projectSlug,
-    amount,
-    fee: 0,
-    totalPayment: amount,
-    paymentMethod: method,
-    paymentNumber: demoQrString,
-    qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(demoQrString)}`,
-    expiredAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-    isRealApi: false,
-    message: lastErrorMessage || 'Pakasir API tidak merespon format JSON yang valid.',
-  };
 }
 
 /**
  * E. Transaction Detail API
- * GET /api/pakasir/transactiondetail
  */
 export async function checkPakasirTransactionStatus(
   orderNumber: string,
@@ -187,11 +171,14 @@ export async function checkPakasirTransactionStatus(
   // If credentials are empty or it's a fallback/simulated order
   if (!projectSlug || !apiKey || !isRealApi) {
     try {
-      const url = `/api/pakasir/transactiondetail?project=${encodeURIComponent(projectSlug || 'demo')}&amount=${Math.round(amount)}&order_id=${encodeURIComponent(orderNumber)}&api_key=${encodeURIComponent(apiKey || 'demo')}`;
-      const response = await fetch(url, { method: 'GET' });
-      const parsed = await parseJsonSafely(response);
+      const queryStr = `project=${encodeURIComponent(projectSlug || 'demo')}&amount=${Math.round(amount)}&order_id=${encodeURIComponent(orderNumber)}&api_key=${encodeURIComponent(apiKey || 'demo')}`;
+      const { ok, data } = await fetchPakasirApi(
+        `/api/pakasir/transactiondetail?${queryStr}`,
+        `https://app.pakasir.com/api/transactiondetail?${queryStr}`,
+        { method: 'GET' }
+      );
 
-      if (response.ok && parsed.isJson && parsed.data && (parsed.data.transaction?.status === 'completed' || parsed.data?.status === 'completed')) {
+      if (ok && data && (data.transaction?.status === 'completed' || data?.status === 'completed')) {
         return {
           success: true,
           orderId: orderNumber,
@@ -226,14 +213,15 @@ export async function checkPakasirTransactionStatus(
   let lastErrMsg = 'Transaksi belum terdeteksi di Pakasir.';
 
   for (const amt of amountsToTry) {
-    // 1. Try proxy
     try {
-      const url = `/api/pakasir/transactiondetail?project=${encodeURIComponent(projectSlug)}&amount=${amt}&order_id=${encodeURIComponent(orderNumber)}&api_key=${encodeURIComponent(apiKey)}`;
-      const response = await fetch(url, { method: 'GET' });
-      const parsed = await parseJsonSafely(response);
+      const queryStr = `project=${encodeURIComponent(projectSlug)}&amount=${amt}&order_id=${encodeURIComponent(orderNumber)}&api_key=${encodeURIComponent(apiKey)}`;
+      const { ok, data } = await fetchPakasirApi(
+        `/api/pakasir/transactiondetail?${queryStr}`,
+        `https://app.pakasir.com/api/transactiondetail?${queryStr}`,
+        { method: 'GET' }
+      );
 
-      if (response.ok && parsed.isJson && parsed.data) {
-        const data = parsed.data;
+      if (ok && data) {
         const tx = data.transaction || data.payment || data.data;
         if (tx && (tx.order_id || tx.orderId || tx.status)) {
           const rawStatus = String(tx?.status || data?.status || '').toLowerCase();
@@ -263,55 +251,11 @@ export async function checkPakasirTransactionStatus(
         }
       }
 
-      if (parsed.isJson && parsed.data?.message) {
-        lastErrMsg = parsed.data.message;
+      if (data?.message) {
+        lastErrMsg = data.message;
       }
     } catch (err: any) {
-      console.warn('Pakasir detail proxy error:', err);
-    }
-
-    // 2. Try direct Pakasir API
-    try {
-      const directUrl = `https://app.pakasir.com/api/transactiondetail?project=${encodeURIComponent(projectSlug)}&amount=${amt}&order_id=${encodeURIComponent(orderNumber)}&api_key=${encodeURIComponent(apiKey)}`;
-      const directRes = await fetch(directUrl, { method: 'GET' });
-      const parsedDirect = await parseJsonSafely(directRes);
-
-      if (directRes.ok && parsedDirect.isJson && parsedDirect.data) {
-        const data = parsedDirect.data;
-        const tx = data.transaction || data.payment || data.data;
-        if (tx && (tx.order_id || tx.orderId || tx.status)) {
-          const rawStatus = String(tx?.status || data?.status || '').toLowerCase();
-          let status: 'completed' | 'pending' | 'cancelled' | 'expired' | 'unknown' = 'pending';
-
-          if (['completed', 'success', 'paid', 'lunas', 'berhasil', 'settlement'].includes(rawStatus)) {
-            status = 'completed';
-          } else if (['cancelled', 'canceled', 'batal'].includes(rawStatus)) {
-            status = 'cancelled';
-          } else if (['expired', 'kadaluarsa'].includes(rawStatus)) {
-            status = 'expired';
-          } else if (rawStatus === 'pending' || rawStatus === 'waiting') {
-            status = 'pending';
-          } else if (rawStatus) {
-            status = rawStatus as any;
-          }
-
-          return {
-            success: true,
-            orderId: tx?.order_id || tx?.orderId || orderNumber,
-            amount: Number(tx?.amount || amount),
-            project: tx?.project || projectSlug,
-            status,
-            paymentMethod: tx?.payment_method || tx?.paymentMethod || 'qris',
-            completedAt: tx?.completed_at || tx?.completedAt,
-          };
-        }
-      }
-
-      if (parsedDirect.isJson && parsedDirect.data?.message) {
-        lastErrMsg = parsedDirect.data.message;
-      }
-    } catch (err: any) {
-      console.warn('Pakasir detail direct fetch error:', err);
+      lastErrMsg = err.message || lastErrMsg;
     }
   }
 
@@ -330,7 +274,6 @@ export async function checkPakasirTransactionStatus(
 
 /**
  * C.4 API: Payment Simulation (Sandbox Mode)
- * Method: POST /api/pakasir/paymentsimulation
  */
 export async function simulatePakasirPayment(
   orderNumber: string,
@@ -347,35 +290,19 @@ export async function simulatePakasirPayment(
     api_key: apiKey || 'demo',
   };
 
-  // 1. Try proxy
-  try {
-    const response = await fetch('/api/pakasir/paymentsimulation', {
+  const { ok, data } = await fetchPakasirApi(
+    '/api/pakasir/paymentsimulation',
+    'https://app.pakasir.com/api/paymentsimulation',
+    {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    });
-    const parsed = await parseJsonSafely(response);
-    if (response.ok && parsed.isJson) {
-      return { success: true, message: parsed.data.message || 'Simulasi pembayaran Pakasir berhasil diselesaikan!' };
     }
-  } catch (err: any) {
-    console.warn('Simulation proxy error, trying direct...', err);
-  }
+  );
 
-  // 2. Try direct fetch
-  try {
-    const directRes = await fetch('https://app.pakasir.com/api/paymentsimulation', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const parsedDirect = await parseJsonSafely(directRes);
-    if (directRes.ok && parsedDirect.isJson) {
-      return { success: true, message: parsedDirect.data.message || 'Simulasi pembayaran Pakasir berhasil diselesaikan!' };
-    }
-  } catch (err: any) {
-    console.warn('Simulation direct error:', err);
+  if (ok) {
+    return { success: true, message: data.message || 'Simulasi pembayaran Pakasir berhasil diselesaikan!' };
+  } else {
+    return { success: false, message: data.message || 'Gagal melakukan simulasi pembayaran.' };
   }
-
-  return { success: true, message: 'Simulasi pembayaran diselesaikan secara lokal.' };
 }
