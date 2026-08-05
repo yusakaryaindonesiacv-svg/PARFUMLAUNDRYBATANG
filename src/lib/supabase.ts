@@ -2,6 +2,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getStorageData, STORAGE_KEYS } from './storage';
 import { Product, Category, Order, Customer, Expense, Coupon, CarouselBanner, StoreSettings, User } from '../types';
 import { compressBase64IfNeeded } from './imageUtils';
+import { PERMANENT_CONFIG } from './config';
 
 let cachedClient: SupabaseClient | null = null;
 
@@ -31,10 +32,10 @@ export function getSupabaseClient(): SupabaseClient | null {
   if (cachedClient) return cachedClient;
 
   const settings = getStorageData<StoreSettings>(STORAGE_KEYS.SETTINGS, {} as StoreSettings);
-  const url = settings.supabaseUrl || (import.meta as any).env?.VITE_SUPABASE_URL || '';
-  const key = settings.supabaseAnonKey || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+  const url = (settings.supabaseUrl && settings.supabaseUrl.trim()) || (import.meta as any).env?.VITE_SUPABASE_URL || PERMANENT_CONFIG.supabaseUrl || '';
+  const key = (settings.supabaseAnonKey && settings.supabaseAnonKey.trim()) || (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || PERMANENT_CONFIG.supabaseAnonKey || '';
 
-  if (url && key && url.startsWith('http')) {
+  if (url && key && url.startsWith('http') && !url.includes('example.com') && !url.includes('xxxxxxxxxxxx')) {
     try {
       cachedClient = createClient(url, key);
       return cachedClient;
@@ -664,7 +665,7 @@ export async function upsertSettingsToSupabase(settings: StoreSettings): Promise
   if (!client) return { success: false, error: 'Supabase belum terkonfigurasi' };
 
   try {
-    const payload = {
+    const fullPayload = {
       id: 'store_settings',
       store_name: settings.storeName,
       tagline: settings.tagline || '',
@@ -676,9 +677,35 @@ export async function upsertSettingsToSupabase(settings: StoreSettings): Promise
       base_rate_per_km: settings.baseRatePerKm,
       min_delivery_fee: settings.minDeliveryFee,
       free_delivery_min_order: settings.freeDeliveryMinOrder,
+      pakasir_project_key: settings.pakasirProjectKey || '',
+      pakasir_api_key: settings.pakasirApiKey || '',
+      supabase_url: settings.supabaseUrl || '',
+      supabase_anon_key: settings.supabaseAnonKey || '',
       updated_at: new Date().toISOString(),
     };
-    const { error } = await client.from('settings').upsert(payload, { onConflict: 'id' });
+
+    let { error } = await client.from('settings').upsert(fullPayload, { onConflict: 'id' });
+
+    // Fallback if extra columns don't exist in Supabase schema yet
+    if (error && error.message?.includes('column')) {
+      const basicPayload = {
+        id: 'store_settings',
+        store_name: settings.storeName,
+        tagline: settings.tagline || '',
+        top_announcement_text: settings.topAnnouncementText || '',
+        app_logo_url: settings.appLogoUrl || '',
+        phone: settings.phone || '',
+        address: settings.address || '',
+        city: settings.city || '',
+        base_rate_per_km: settings.baseRatePerKm,
+        min_delivery_fee: settings.minDeliveryFee,
+        free_delivery_min_order: settings.freeDeliveryMinOrder,
+        updated_at: new Date().toISOString(),
+      };
+      const resFallback = await client.from('settings').upsert(basicPayload, { onConflict: 'id' });
+      error = resFallback.error;
+    }
+
     if (error) return { success: false, error: error.message };
     return { success: true };
   } catch (err: any) {
@@ -705,6 +732,10 @@ export async function fetchSettingsFromSupabase(): Promise<Partial<StoreSettings
       baseRatePerKm: data.base_rate_per_km ? Number(data.base_rate_per_km) : undefined,
       minDeliveryFee: data.min_delivery_fee ? Number(data.min_delivery_fee) : undefined,
       freeDeliveryMinOrder: data.free_delivery_min_order ? Number(data.free_delivery_min_order) : undefined,
+      pakasirProjectKey: data.pakasir_project_key || undefined,
+      pakasirApiKey: data.pakasir_api_key || undefined,
+      supabaseUrl: data.supabase_url || undefined,
+      supabaseAnonKey: data.supabase_anon_key || undefined,
     };
   } catch (err) {
     console.error('Error fetching settings from Supabase:', err);
