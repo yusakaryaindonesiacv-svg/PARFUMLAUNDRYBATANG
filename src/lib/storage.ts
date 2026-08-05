@@ -574,14 +574,54 @@ export const DEFAULT_ORDERS: Order[] = [
   }
 ];
 
+// Permanent Configuration Fallbacks for Cloud Connections (Supabase & Pakasir)
+export const PERMANENT_CONFIG = {
+  supabaseUrl: (import.meta as any).env?.VITE_SUPABASE_URL || '',
+  supabaseAnonKey: (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '',
+  pakasirProjectKey: (import.meta as any).env?.VITE_PAKASIR_PROJECT_KEY || 'DEMO-PAKASIR-BATANG',
+  pakasirApiKey: (import.meta as any).env?.VITE_PAKASIR_API_KEY || 'demo_api_key_pakasir_123',
+};
+
+// Helper function to resolve effective store settings with permanent code & env fallbacks
+export function getEffectiveStoreSettings(customSettings?: Partial<StoreSettings> | null): StoreSettings {
+  const merged: StoreSettings = {
+    ...DEFAULT_SETTINGS,
+    ...(customSettings || {}),
+  };
+
+  const envSupabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
+  const envSupabaseKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+  const envPakasirProject = (import.meta as any).env?.VITE_PAKASIR_PROJECT_KEY || '';
+  const envPakasirApiKey = (import.meta as any).env?.VITE_PAKASIR_API_KEY || '';
+
+  merged.supabaseUrl = (merged.supabaseUrl && merged.supabaseUrl.trim()) || envSupabaseUrl || DEFAULT_SETTINGS.supabaseUrl || PERMANENT_CONFIG.supabaseUrl || '';
+  merged.supabaseAnonKey = (merged.supabaseAnonKey && merged.supabaseAnonKey.trim()) || envSupabaseKey || DEFAULT_SETTINGS.supabaseAnonKey || PERMANENT_CONFIG.supabaseAnonKey || '';
+  merged.pakasirProjectKey = (merged.pakasirProjectKey && merged.pakasirProjectKey.trim()) || envPakasirProject || DEFAULT_SETTINGS.pakasirProjectKey || PERMANENT_CONFIG.pakasirProjectKey || 'DEMO-PAKASIR-BATANG';
+  merged.pakasirApiKey = (merged.pakasirApiKey && merged.pakasirApiKey.trim()) || envPakasirApiKey || DEFAULT_SETTINGS.pakasirApiKey || PERMANENT_CONFIG.pakasirApiKey || 'demo_api_key_pakasir_123';
+
+  return merged;
+}
+
 // Helper Functions for LocalStorage Access
 export function getStorageData<T>(key: string, defaultValue: T): T {
   try {
     const raw = localStorage.getItem(key);
-    if (!raw) return defaultValue;
-    return JSON.parse(raw) as T;
+    if (!raw) {
+      if (key === STORAGE_KEYS.SETTINGS) {
+        return getEffectiveStoreSettings() as unknown as T;
+      }
+      return defaultValue;
+    }
+    const parsed = JSON.parse(raw) as T;
+    if (key === STORAGE_KEYS.SETTINGS && parsed && typeof parsed === 'object') {
+      return getEffectiveStoreSettings(parsed as unknown as StoreSettings) as unknown as T;
+    }
+    return parsed;
   } catch (err) {
     console.error(`Error reading ${key} from storage:`, err);
+    if (key === STORAGE_KEYS.SETTINGS) {
+      return getEffectiveStoreSettings() as unknown as T;
+    }
     return defaultValue;
   }
 }
@@ -600,7 +640,7 @@ export function initLocalStorage(): void {
   const isCleared = localStorage.getItem('plb_cleared_dummy_v1') === 'true';
 
   if (!isInitialized) {
-    setStorageData(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
+    setStorageData(STORAGE_KEYS.SETTINGS, getEffectiveStoreSettings());
     setStorageData(STORAGE_KEYS.CATEGORIES, isCleared ? [] : DEFAULT_CATEGORIES);
     setStorageData(STORAGE_KEYS.PRODUCTS, isCleared ? [] : DEFAULT_PRODUCTS);
     setStorageData(STORAGE_KEYS.COUPONS, isCleared ? [] : DEFAULT_COUPONS);
@@ -612,11 +652,10 @@ export function initLocalStorage(): void {
     setStorageData<User>(STORAGE_KEYS.CURRENT_USER, DEFAULT_USERS[0]);
     localStorage.setItem('plb_initialized_v2', 'true');
   } else {
-    // Migration check for settings if old address exists
+    // Migration check for settings
     const existingSettings = getStorageData<StoreSettings | null>(STORAGE_KEYS.SETTINGS, null);
-    if (!existingSettings || existingSettings.address?.includes('Kalisalak') || existingSettings.latitude === -6.9048) {
-      setStorageData(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
-    }
+    const effective = getEffectiveStoreSettings(existingSettings);
+    setStorageData(STORAGE_KEYS.SETTINGS, effective);
   }
 }
 
