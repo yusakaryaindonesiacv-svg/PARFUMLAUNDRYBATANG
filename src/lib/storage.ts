@@ -1,4 +1,7 @@
 import { Product, Category, Coupon, Customer, Expense, Order, CarouselBanner, StoreSettings, User, UserRole, FeaturePermissions } from '../types';
+import { PERMANENT_CONFIG } from './config';
+
+export { PERMANENT_CONFIG };
 
 const STORAGE_KEYS = {
   PRODUCTS: 'plb_products_v1',
@@ -573,14 +576,6 @@ export const DEFAULT_ORDERS: Order[] = [
     isPosSale: true,
   }
 ];
-
-// Permanent Configuration Fallbacks for Cloud Connections (Supabase & Pakasir)
-export const PERMANENT_CONFIG = {
-  supabaseUrl: (import.meta as any).env?.VITE_SUPABASE_URL || '',
-  supabaseAnonKey: (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '',
-  pakasirProjectKey: (import.meta as any).env?.VITE_PAKASIR_PROJECT_KEY || 'DEMO-PAKASIR-BATANG',
-  pakasirApiKey: (import.meta as any).env?.VITE_PAKASIR_API_KEY || 'demo_api_key_pakasir_123',
-};
 
 // Helper function to resolve effective store settings with permanent code & env fallbacks
 export function getEffectiveStoreSettings(customSettings?: Partial<StoreSettings> | null): StoreSettings {
