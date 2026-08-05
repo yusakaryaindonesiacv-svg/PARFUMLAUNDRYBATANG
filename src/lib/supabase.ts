@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getStorageData, STORAGE_KEYS } from './storage';
 import { Product, Category, Order, Customer, Expense, Coupon, CarouselBanner, StoreSettings, User } from '../types';
+import { compressBase64IfNeeded } from './imageUtils';
 
 let cachedClient: SupabaseClient | null = null;
 
@@ -68,6 +69,15 @@ export async function upsertProductToSupabase(product: Product): Promise<{ succe
   if (!client) return { success: false, error: 'Supabase belum terkonfigurasi' };
 
   try {
+    const compressedImageUrl = await compressBase64IfNeeded(product.imageUrl || '', 600, 600, 0.7);
+
+    const compressedVolumes = await Promise.all(
+      (product.volumes || []).map(async (v) => ({
+        ...v,
+        imageUrl: v.imageUrl ? await compressBase64IfNeeded(v.imageUrl, 600, 600, 0.7) : undefined,
+      }))
+    );
+
     const payload = {
       id: product.id,
       code: product.code,
@@ -75,10 +85,10 @@ export async function upsertProductToSupabase(product: Product): Promise<{ succe
       category: product.category,
       scent_family: product.scentFamily || '',
       description: product.description || '',
-      image_url: product.imageUrl || '',
+      image_url: compressedImageUrl,
       rating: product.rating || 4.8,
       is_popular: !!product.isPopular,
-      volumes: product.volumes || [],
+      volumes: compressedVolumes,
       created_at: product.createdAt || new Date().toISOString(),
     };
 
@@ -382,6 +392,10 @@ export async function upsertBannerToSupabase(banner: CarouselBanner): Promise<{ 
   if (!client) return { success: false, error: 'Supabase belum terkonfigurasi' };
 
   try {
+    const imgDesktop = await compressBase64IfNeeded(banner.imageUrlDesktop || '', 1000, 600, 0.75);
+    const imgTablet = await compressBase64IfNeeded(banner.imageUrlTablet || banner.imageUrlDesktop || '', 800, 500, 0.75);
+    const imgMobile = await compressBase64IfNeeded(banner.imageUrlMobile || banner.imageUrlDesktop || '', 600, 400, 0.75);
+
     const payload = {
       id: banner.id,
       title: banner.title,
@@ -389,9 +403,9 @@ export async function upsertBannerToSupabase(banner: CarouselBanner): Promise<{ 
       cta_text: banner.ctaText || '',
       cta_link: banner.ctaLink || '',
       badge: banner.badge || '',
-      image_url_desktop: banner.imageUrlDesktop || '',
-      image_url_tablet: banner.imageUrlTablet || banner.imageUrlDesktop || '',
-      image_url_mobile: banner.imageUrlMobile || banner.imageUrlDesktop || '',
+      image_url_desktop: imgDesktop,
+      image_url_tablet: imgTablet,
+      image_url_mobile: imgMobile,
       banner_order: banner.order || 1,
       is_active: banner.isActive !== false,
     };
