@@ -38,7 +38,8 @@ import {
   deleteOrderFromSupabase,
   deleteExpenseFromSupabase,
   upsertSettingsToSupabase,
-  syncAllDataToSupabase 
+  syncAllDataToSupabase,
+  clearSupabaseClientCache 
 } from '../lib/supabase';
 import { createPakasirTransaction } from '../lib/pakasir';
 import { STORAGE_KEYS, setStorageData, getDefaultPermissionsForRole, getEffectivePermissions } from '../lib/storage';
@@ -790,6 +791,30 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setTestingSupabase(false);
     if (res.success) {
       handlePullDataFromSupabase();
+    }
+  };
+
+  const handleSaveSupabaseConfig = async () => {
+    setStorageData(STORAGE_KEYS.SETTINGS, settings);
+    clearSupabaseClientCache();
+
+    if (!settings.supabaseUrl || !settings.supabaseAnonKey) {
+      alert('Supabase URL & Anon Key telah disimpan (kosong).');
+      return;
+    }
+
+    setTestingSupabase(true);
+    setSupabaseTestResult(null);
+    const testRes = await testSupabaseConnection(settings.supabaseUrl, settings.supabaseAnonKey);
+    setSupabaseTestResult(testRes);
+    setTestingSupabase(false);
+
+    if (testRes.success) {
+      await upsertSettingsToSupabase(settings);
+      await handleSyncAllToSupabase();
+      alert('✓ Pengaturan Supabase tersimpan & seluruh data berhasil dikoneksikan ke Cloud Supabase!');
+    } else {
+      alert(`⚠️ Pengaturan tersimpan di memori lokal, namun koneksi ke Supabase gagal: ${testRes.message}`);
     }
   };
 
@@ -2223,15 +2248,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleTestSupabase}
-                    disabled={testingSupabase}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md transition-all disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${testingSupabase ? 'animate-spin' : ''}`} />
-                    <span>{testingSupabase ? 'Pengujian...' : 'Tes Koneksi'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveSupabaseConfig}
+                      disabled={testingSupabase}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md transition-all disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>Simpan & Connect Supabase</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleTestSupabase}
+                      disabled={testingSupabase}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md transition-all disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${testingSupabase ? 'animate-spin' : ''}`} />
+                      <span>{testingSupabase ? 'Pengujian...' : 'Tes Koneksi'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-2xl text-xs space-y-1">
+                  <div className="font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>Dual Connection Supabase (Di Panel Admin & Environment Variable Vercel):</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    1. <strong>Pengaturan Panel Admin</strong>: Mengisi URL & Anon Key di atas lalu mengklik <strong>Simpan & Connect Supabase</strong> akan langsung mengaktifkan sinkronisasi cloud real-time & menyimpan info toko ke cloud.<br />
+                    2. <strong>Vercel Environment Variable</strong>: Untuk memastikan semua HP / Laptop baru yang pertama kali membuka website langsung terhubung tanpa input manual, tambahkan juga <code>VITE_SUPABASE_URL</code> dan <code>VITE_SUPABASE_ANON_KEY</code> pada Dashboard Vercel Anda (Project Settings → Environment Variables).
+                  </p>
                 </div>
 
                 {supabaseTestResult && (
@@ -2414,6 +2461,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     />
                     <p className="text-[10px] text-slate-400 mt-1">API Key rahasia dari halaman detail Proyek Pakasir.</p>
                   </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setStorageData(STORAGE_KEYS.SETTINGS, settings);
+                      await upsertSettingsToSupabase(settings);
+                      alert('✓ Pengaturan Pakasir berhasil disimpan & disinkronkan ke Supabase Cloud Database!\n\nSetiap perangkat baru yang membuka website ini akan otomatis terhubung.');
+                    }}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-md transition-all cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Simpan & Permanenkan Pakasir ke Database Cloud</span>
+                  </button>
                 </div>
 
                 <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs space-y-2.5 text-slate-600 dark:text-slate-300">
