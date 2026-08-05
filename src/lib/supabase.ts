@@ -627,6 +627,59 @@ export async function fetchOrdersFromSupabase(): Promise<Order[] | null> {
 }
 
 // --- SYNC ALL LOCAL DATA TO SUPABASE IN ONE CLICK ---
+export async function upsertSettingsToSupabase(settings: StoreSettings): Promise<{ success: boolean; error?: string }> {
+  const client = getSupabaseClient();
+  if (!client) return { success: false, error: 'Supabase belum terkonfigurasi' };
+
+  try {
+    const payload = {
+      id: 'store_settings',
+      store_name: settings.storeName,
+      tagline: settings.tagline || '',
+      top_announcement_text: settings.topAnnouncementText || '',
+      app_logo_url: settings.appLogoUrl || '',
+      phone: settings.phone || '',
+      address: settings.address || '',
+      city: settings.city || '',
+      base_rate_per_km: settings.baseRatePerKm,
+      min_delivery_fee: settings.minDeliveryFee,
+      free_delivery_min_order: settings.freeDeliveryMinOrder,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await client.from('settings').upsert(payload, { onConflict: 'id' });
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Unknown error' };
+  }
+}
+
+export async function fetchSettingsFromSupabase(): Promise<Partial<StoreSettings> | null> {
+  const client = getSupabaseClient();
+  if (!client) return null;
+
+  try {
+    const { data, error } = await client.from('settings').select('*').eq('id', 'store_settings').maybeSingle();
+    if (error || !data) return null;
+
+    return {
+      storeName: data.store_name || undefined,
+      tagline: data.tagline || undefined,
+      topAnnouncementText: data.top_announcement_text || undefined,
+      appLogoUrl: data.app_logo_url || undefined,
+      phone: data.phone || undefined,
+      address: data.address || undefined,
+      city: data.city || undefined,
+      baseRatePerKm: data.base_rate_per_km ? Number(data.base_rate_per_km) : undefined,
+      minDeliveryFee: data.min_delivery_fee ? Number(data.min_delivery_fee) : undefined,
+      freeDeliveryMinOrder: data.free_delivery_min_order ? Number(data.free_delivery_min_order) : undefined,
+    };
+  } catch (err) {
+    console.error('Error fetching settings from Supabase:', err);
+    return null;
+  }
+}
+
 export async function syncAllDataToSupabase(
   products: Product[],
   categories: Category[],
@@ -635,7 +688,8 @@ export async function syncAllDataToSupabase(
   expenses: Expense[],
   coupons: Coupon[],
   banners: CarouselBanner[],
-  users?: User[]
+  users?: User[],
+  settings?: StoreSettings
 ): Promise<{ success: boolean; message: string }> {
   const client = getSupabaseClient();
   if (!client) {
@@ -643,6 +697,12 @@ export async function syncAllDataToSupabase(
   }
 
   let errors: string[] = [];
+
+  // 0. Sync Settings
+  if (settings) {
+    const res = await upsertSettingsToSupabase(settings);
+    if (!res.success && res.error) errors.push(`Pengaturan Toko: ${res.error}`);
+  }
 
   // 1. Sync Categories
   for (const c of categories) {
@@ -822,6 +882,22 @@ CREATE TABLE IF NOT EXISTS public.users (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 9. Pengaturan Toko (Settings)
+CREATE TABLE IF NOT EXISTS public.settings (
+  id TEXT PRIMARY KEY DEFAULT 'store_settings',
+  store_name TEXT,
+  tagline TEXT,
+  top_announcement_text TEXT,
+  app_logo_url TEXT,
+  phone TEXT,
+  address TEXT,
+  city TEXT,
+  base_rate_per_km NUMERIC,
+  min_delivery_fee NUMERIC,
+  free_delivery_min_order NUMERIC,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Buka RLS Read/Write
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
@@ -831,6 +907,7 @@ ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.banners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow Public Access Products" ON public.products;
 CREATE POLICY "Allow Public Access Products" ON public.products FOR ALL USING (true);
@@ -855,4 +932,7 @@ CREATE POLICY "Allow Public Access Banners" ON public.banners FOR ALL USING (tru
 
 DROP POLICY IF EXISTS "Allow Public Access Users" ON public.users;
 CREATE POLICY "Allow Public Access Users" ON public.users FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Allow Public Access Settings" ON public.settings;
+CREATE POLICY "Allow Public Access Settings" ON public.settings FOR ALL USING (true);
 `;
