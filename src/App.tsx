@@ -28,6 +28,9 @@ import {
   fetchSettingsFromSupabase,
   upsertUserToSupabase, 
   upsertCustomerToSupabase,
+  upsertProductToSupabase,
+  upsertCategoryToSupabase,
+  upsertBannerToSupabase,
   getSupabaseClient
 } from './lib/supabase';
 
@@ -92,28 +95,57 @@ export default function App() {
         const [catRes, prodRes, custRes, coupRes, bannerRes, expRes, ordRes, userRes, settRes] = results;
 
         if (catRes.status === 'fulfilled' && catRes.value !== null) {
-          setCategories(catRes.value);
-          setStorageData(STORAGE_KEYS.CATEGORIES, catRes.value);
+          if (catRes.value.length > 0) {
+            setCategories(catRes.value);
+            setStorageData(STORAGE_KEYS.CATEGORIES, catRes.value);
+          } else {
+            // Auto seed categories to Supabase if empty
+            setCategories(prev => {
+              if (prev.length > 0) {
+                prev.forEach(c => upsertCategoryToSupabase(c));
+              }
+              return prev;
+            });
+          }
         }
 
         if (prodRes.status === 'fulfilled' && prodRes.value !== null) {
-          setProducts(prodRes.value);
-          setStorageData(STORAGE_KEYS.PRODUCTS, prodRes.value);
+          if (prodRes.value.length > 0) {
+            setProducts(prodRes.value);
+            setStorageData(STORAGE_KEYS.PRODUCTS, prodRes.value);
+          } else {
+            // Auto seed products to Supabase if empty
+            setProducts(prev => {
+              if (prev.length > 0) {
+                prev.forEach(p => upsertProductToSupabase(p));
+              }
+              return prev;
+            });
+          }
         }
 
-        if (custRes.status === 'fulfilled' && custRes.value !== null) {
+        if (custRes.status === 'fulfilled' && custRes.value !== null && custRes.value.length > 0) {
           setCustomers(custRes.value);
           setStorageData(STORAGE_KEYS.CUSTOMERS, custRes.value);
         }
 
-        if (coupRes.status === 'fulfilled' && coupRes.value !== null) {
+        if (coupRes.status === 'fulfilled' && coupRes.value !== null && coupRes.value.length > 0) {
           setCoupons(coupRes.value);
           setStorageData(STORAGE_KEYS.COUPONS, coupRes.value);
         }
 
         if (bannerRes.status === 'fulfilled' && bannerRes.value !== null) {
-          setBanners(bannerRes.value);
-          setStorageData(STORAGE_KEYS.BANNERS, bannerRes.value);
+          if (bannerRes.value.length > 0) {
+            setBanners(bannerRes.value);
+            setStorageData(STORAGE_KEYS.BANNERS, bannerRes.value);
+          } else {
+            setBanners(prev => {
+              if (prev.length > 0) {
+                prev.forEach(b => upsertBannerToSupabase(b));
+              }
+              return prev;
+            });
+          }
         }
 
         if (expRes.status === 'fulfilled' && expRes.value !== null) {
