@@ -42,6 +42,7 @@ import {
 } from '../lib/supabase';
 import { createPakasirTransaction } from '../lib/pakasir';
 import { STORAGE_KEYS, setStorageData, getDefaultPermissionsForRole, getEffectivePermissions } from '../lib/storage';
+import { compressImageFile } from '../lib/imageUtils';
 
 interface AdminPanelProps {
   products: Product[];
@@ -1801,21 +1802,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           type="file"
                           id="appLogoFileInput"
                           accept="image/*"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
-                            if (file.size > 5 * 1024 * 1024) {
-                              alert('Ukuran file foto logo terlalu besar (maksimal 5MB).');
-                              return;
+                            try {
+                              const compressed = await compressImageFile(file, 400, 400, 0.85);
+                              setSettings((prev) => ({ ...prev, appLogoUrl: compressed }));
+                            } catch (err) {
+                              console.error('Error compressing logo:', err);
                             }
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              const base64Data = event.target?.result as string;
-                              if (base64Data) {
-                                setSettings((prev) => ({ ...prev, appLogoUrl: base64Data }));
-                              }
-                            };
-                            reader.readAsDataURL(file);
                           }}
                           className="hidden"
                         />
@@ -2873,16 +2868,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         type="file"
                         accept="image/*"
                         className="hidden"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              if (typeof reader.result === 'string') {
-                                setProdImageUrl(reader.result);
-                              }
-                            };
-                            reader.readAsDataURL(file);
+                            try {
+                              const compressed = await compressImageFile(file, 800, 800, 0.75);
+                              setProdImageUrl(compressed);
+                            } catch (err) {
+                              console.error('Error compressing product image:', err);
+                            }
                           }
                         }}
                       />
@@ -3108,18 +3102,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 type="file"
                                 accept="image/*"
                                 className="hidden"
-                                onChange={(e) => {
+                                onChange={async (e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                      if (typeof reader.result === 'string') {
-                                        const updated = [...prodVolumes];
-                                        updated[idx].imageUrl = reader.result;
-                                        setProdVolumes(updated);
-                                      }
-                                    };
-                                    reader.readAsDataURL(file);
+                                    try {
+                                      const compressed = await compressImageFile(file, 800, 800, 0.75);
+                                      const updated = [...prodVolumes];
+                                      updated[idx].imageUrl = compressed;
+                                      setProdVolumes(updated);
+                                    } catch (err) {
+                                      console.error('Error compressing variant image:', err);
+                                    }
                                   }
                                 }}
                               />
@@ -3410,17 +3403,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            if (typeof reader.result === 'string') {
-                              setBanImgDesktop(reader.result);
-                              if (!banImgMobile) setBanImgMobile(reader.result);
-                            }
-                          };
-                          reader.readAsDataURL(file);
+                          try {
+                            const compressed = await compressImageFile(file, 1200, 600, 0.75);
+                            setBanImgDesktop(compressed);
+                            if (!banImgMobile) setBanImgMobile(compressed);
+                          } catch (err) {
+                            console.error('Error compressing banner image:', err);
+                          }
                         }
                       }}
                     />
@@ -3451,16 +3443,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            if (typeof reader.result === 'string') {
-                              setBanImgMobile(reader.result);
-                            }
-                          };
-                          reader.readAsDataURL(file);
+                          try {
+                            const compressed = await compressImageFile(file, 800, 600, 0.75);
+                            setBanImgMobile(compressed);
+                          } catch (err) {
+                            console.error('Error compressing banner mobile image:', err);
+                          }
                         }
                       }}
                     />
