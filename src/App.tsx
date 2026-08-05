@@ -25,6 +25,7 @@ import {
   fetchBannersFromSupabase,
   fetchExpensesFromSupabase,
   fetchOrdersFromSupabase,
+  fetchSettingsFromSupabase,
   upsertUserToSupabase, 
   upsertCustomerToSupabase 
 } from './lib/supabase';
@@ -120,6 +121,17 @@ export default function App() {
         });
       }
     }).catch(err => console.warn('Supabase users fetch skipped:', err));
+
+    // 9. Fetch Store Settings from Supabase
+    fetchSettingsFromSupabase().then(remoteSettings => {
+      if (remoteSettings !== null) {
+        setSettings(prev => {
+          const updated = { ...prev, ...remoteSettings };
+          setStorageData(STORAGE_KEYS.SETTINGS, updated);
+          return updated;
+        });
+      }
+    }).catch(err => console.warn('Supabase settings fetch skipped:', err));
   }, []);
 
   // Application Global State
