@@ -28,7 +28,7 @@ import {
   fetchSettingsFromSupabase,
   upsertUserToSupabase, 
   upsertCustomerToSupabase,
-  withTimeout 
+  getSupabaseClient
 } from './lib/supabase';
 
 // Components
@@ -72,58 +72,61 @@ export default function App() {
     initLocalStorage();
 
     const syncRemoteData = async () => {
+      const client = getSupabaseClient();
+      if (!client) return;
+
       setIsSyncingSupabase(true);
       try {
         const results = await Promise.allSettled([
-          withTimeout(fetchCategoriesFromSupabase(), 8000),
-          withTimeout(fetchProductsFromSupabase(), 8000),
-          withTimeout(fetchCustomersFromSupabase(), 8000),
-          withTimeout(fetchCouponsFromSupabase(), 8000),
-          withTimeout(fetchBannersFromSupabase(), 8000),
-          withTimeout(fetchExpensesFromSupabase(), 8000),
-          withTimeout(fetchOrdersFromSupabase(), 8000),
-          withTimeout(fetchUsersFromSupabase(), 8000),
-          withTimeout(fetchSettingsFromSupabase(), 8000),
+          fetchCategoriesFromSupabase(),
+          fetchProductsFromSupabase(),
+          fetchCustomersFromSupabase(),
+          fetchCouponsFromSupabase(),
+          fetchBannersFromSupabase(),
+          fetchExpensesFromSupabase(),
+          fetchOrdersFromSupabase(),
+          fetchUsersFromSupabase(),
+          fetchSettingsFromSupabase(),
         ]);
 
         const [catRes, prodRes, custRes, coupRes, bannerRes, expRes, ordRes, userRes, settRes] = results;
 
-        if (catRes.status === 'fulfilled' && catRes.value && catRes.value.length > 0) {
+        if (catRes.status === 'fulfilled' && catRes.value !== null) {
           setCategories(catRes.value);
           setStorageData(STORAGE_KEYS.CATEGORIES, catRes.value);
         }
 
-        if (prodRes.status === 'fulfilled' && prodRes.value && prodRes.value.length > 0) {
+        if (prodRes.status === 'fulfilled' && prodRes.value !== null) {
           setProducts(prodRes.value);
           setStorageData(STORAGE_KEYS.PRODUCTS, prodRes.value);
         }
 
-        if (custRes.status === 'fulfilled' && custRes.value && custRes.value.length > 0) {
+        if (custRes.status === 'fulfilled' && custRes.value !== null) {
           setCustomers(custRes.value);
           setStorageData(STORAGE_KEYS.CUSTOMERS, custRes.value);
         }
 
-        if (coupRes.status === 'fulfilled' && coupRes.value && coupRes.value.length > 0) {
+        if (coupRes.status === 'fulfilled' && coupRes.value !== null) {
           setCoupons(coupRes.value);
           setStorageData(STORAGE_KEYS.COUPONS, coupRes.value);
         }
 
-        if (bannerRes.status === 'fulfilled' && bannerRes.value && bannerRes.value.length > 0) {
+        if (bannerRes.status === 'fulfilled' && bannerRes.value !== null) {
           setBanners(bannerRes.value);
           setStorageData(STORAGE_KEYS.BANNERS, bannerRes.value);
         }
 
-        if (expRes.status === 'fulfilled' && expRes.value && expRes.value.length > 0) {
+        if (expRes.status === 'fulfilled' && expRes.value !== null) {
           setExpenses(expRes.value);
           setStorageData(STORAGE_KEYS.EXPENSES, expRes.value);
         }
 
-        if (ordRes.status === 'fulfilled' && ordRes.value && ordRes.value.length > 0) {
+        if (ordRes.status === 'fulfilled' && ordRes.value !== null) {
           setOrders(ordRes.value);
           setStorageData(STORAGE_KEYS.ORDERS, ordRes.value);
         }
 
-        if (userRes.status === 'fulfilled' && userRes.value && userRes.value.length > 0) {
+        if (userRes.status === 'fulfilled' && userRes.value !== null) {
           setUsers(prev => {
             const mergedMap = new Map<string, User>();
             prev.forEach(u => mergedMap.set(u.id, u));
@@ -134,7 +137,7 @@ export default function App() {
           });
         }
 
-        if (settRes.status === 'fulfilled' && settRes.value && Object.keys(settRes.value).length > 0) {
+        if (settRes.status === 'fulfilled' && settRes.value !== null && Object.keys(settRes.value).length > 0) {
           setSettings(prev => {
             const updated = { ...prev, ...settRes.value };
             setStorageData(STORAGE_KEYS.SETTINGS, updated);
