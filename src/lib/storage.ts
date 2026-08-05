@@ -195,12 +195,12 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   baseRatePerKm: 2000,
   minDeliveryFee: 5000,
   freeDeliveryMinOrder: 250000,
-  pakasirProjectKey: 'DEMO-PAKASIR-BATANG',
-  pakasirApiKey: 'demo_api_key_pakasir_123',
-  pakasirApiUrl: 'https://pakasir.com/api/v1',
+  pakasirProjectKey: 'parfum-laundry-batang',
+  pakasirApiKey: '7IXNQUn8RzLNgpDRHacqWHpit6FTSBVj',
+  pakasirApiUrl: 'https://app.pakasir.com/api',
   googleSheetsWebappUrl: '',
-  supabaseUrl: '',
-  supabaseAnonKey: '',
+  supabaseUrl: 'https://lwcksavogzbkostwlwtv.supabase.co',
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3Y2tzYXZvZ3pia29zdHdsd3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2NDc1MjUsImV4cCI6MjEwMTIyMzUyNX0.OoIqlADsRxC1Bjj-UfYYrx_N4gkRAYG1PlPxO2bOwHs',
   enabledNationalCouriers: ['JNT', 'JNE', 'POS', 'SICEPAT', 'ANTERAJA', 'WAHANA', 'NINJA', 'LION'],
 };
 
@@ -586,13 +586,44 @@ export function getEffectiveStoreSettings(customSettings?: Partial<StoreSettings
 
   const envSupabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
   const envSupabaseKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
-  const envPakasirProject = (import.meta as any).env?.VITE_PAKASIR_PROJECT_KEY || '';
-  const envPakasirApiKey = (import.meta as any).env?.VITE_PAKASIR_API_KEY || '';
+  const envPakasirProject =
+    (import.meta as any).env?.VITE_PAKASIR_PROJECT_KEY ||
+    (import.meta as any).env?.VITE_PAKASIR_PROJECT_SLUG ||
+    (import.meta as any).env?.PAKASIR_PROJECT_SLUG ||
+    '';
+  const envPakasirApiKey =
+    (import.meta as any).env?.VITE_PAKASIR_API_KEY ||
+    (import.meta as any).env?.PAKASIR_API_KEY ||
+    '';
 
-  merged.supabaseUrl = (merged.supabaseUrl && merged.supabaseUrl.trim()) || envSupabaseUrl || DEFAULT_SETTINGS.supabaseUrl || PERMANENT_CONFIG.supabaseUrl || '';
-  merged.supabaseAnonKey = (merged.supabaseAnonKey && merged.supabaseAnonKey.trim()) || envSupabaseKey || DEFAULT_SETTINGS.supabaseAnonKey || PERMANENT_CONFIG.supabaseAnonKey || '';
-  merged.pakasirProjectKey = (merged.pakasirProjectKey && merged.pakasirProjectKey.trim()) || envPakasirProject || DEFAULT_SETTINGS.pakasirProjectKey || PERMANENT_CONFIG.pakasirProjectKey || 'DEMO-PAKASIR-BATANG';
-  merged.pakasirApiKey = (merged.pakasirApiKey && merged.pakasirApiKey.trim()) || envPakasirApiKey || DEFAULT_SETTINGS.pakasirApiKey || PERMANENT_CONFIG.pakasirApiKey || 'demo_api_key_pakasir_123';
+  // Sanitize stale or dummy Supabase URL
+  let supUrl = (merged.supabaseUrl || '').trim();
+  if (!supUrl || supUrl.includes('wlpbmx4tlehy45ax2jmzy5') || supUrl.includes('example.com') || supUrl.includes('xxxxxxxxxxxx')) {
+    supUrl = envSupabaseUrl || DEFAULT_SETTINGS.supabaseUrl || PERMANENT_CONFIG.supabaseUrl;
+  }
+
+  // Sanitize stale or empty Supabase Anon Key
+  let supKey = (merged.supabaseAnonKey || '').trim();
+  if (!supKey || supKey.length < 50) {
+    supKey = envSupabaseKey || DEFAULT_SETTINGS.supabaseAnonKey || PERMANENT_CONFIG.supabaseAnonKey;
+  }
+
+  // Sanitize Pakasir credentials
+  let pakProject = (merged.pakasirProjectKey || '').trim();
+  if (!pakProject || pakProject === 'DEMO-PAKASIR-BATANG' || pakProject === 'demo') {
+    pakProject = envPakasirProject || DEFAULT_SETTINGS.pakasirProjectKey || PERMANENT_CONFIG.pakasirProjectKey || 'parfum-laundry-batang';
+  }
+
+  let pakKey = (merged.pakasirApiKey || '').trim();
+  if (!pakKey || pakKey === 'demo_api_key_pakasir_123' || pakKey === 'demo') {
+    pakKey = envPakasirApiKey || DEFAULT_SETTINGS.pakasirApiKey || PERMANENT_CONFIG.pakasirApiKey || '7IXNQUn8RzLNgpDRHacqWHpit6FTSBVj';
+  }
+
+  merged.supabaseUrl = supUrl;
+  merged.supabaseAnonKey = supKey;
+  merged.pakasirProjectKey = pakProject;
+  merged.pakasirApiKey = pakKey;
+  merged.pakasirApiUrl = 'https://app.pakasir.com/api';
 
   return merged;
 }
