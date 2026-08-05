@@ -4,6 +4,24 @@ import { Product, Category, Order, Customer, Expense, Coupon, CarouselBanner, St
 
 let cachedClient: SupabaseClient | null = null;
 
+export function withTimeout<T>(promise: Promise<T>, timeoutMs = 8000): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Supabase request timeout after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    promise
+      .then((res) => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
 export function clearSupabaseClientCache() {
   cachedClient = null;
 }
