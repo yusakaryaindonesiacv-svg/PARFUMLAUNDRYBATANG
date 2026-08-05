@@ -37,6 +37,7 @@ import {
   deleteUserFromSupabase,
   deleteOrderFromSupabase,
   deleteExpenseFromSupabase,
+  upsertSettingsToSupabase,
   syncAllDataToSupabase 
 } from '../lib/supabase';
 import { createPakasirTransaction } from '../lib/pakasir';
@@ -401,8 +402,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Sync All Data to Supabase Handlers
   const handleSyncAllToSupabase = async () => {
-    setSyncStatus('Sedang mengirim semua produk, kategori, pengguna & transaksi ke Supabase...');
-    const res = await syncAllDataToSupabase(products, categories, orders, customers, expenses, coupons, banners, users);
+    setSyncStatus('Sedang mengirim semua produk, kategori, pengguna, pengaturan & transaksi ke Supabase...');
+    const res = await syncAllDataToSupabase(products, categories, orders, customers, expenses, coupons, banners, users, settings);
     setSyncStatus(res.message);
   };
 
@@ -1741,9 +1742,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       setStorageData(STORAGE_KEYS.SETTINGS, settings);
-                      alert('✓ Pengaturan Profil Toko, Logo Aplikasi, & Titik Asal Toko berhasil disimpan!');
+                      await upsertSettingsToSupabase(settings);
+                      alert('✓ Pengaturan Profil Toko, Logo Aplikasi, & Titik Asal Toko berhasil disimpan (Lokal & Supabase)!');
                     }}
                     className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 shadow-md transition-all shrink-0"
                   >
