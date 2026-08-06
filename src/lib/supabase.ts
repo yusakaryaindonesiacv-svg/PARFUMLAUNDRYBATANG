@@ -333,7 +333,7 @@ export async function upsertOrderToSupabase(order: Order): Promise<{ success: bo
   if (!client) return { success: false, error: 'Supabase belum terkonfigurasi' };
 
   try {
-    const payload = {
+    const payload: Record<string, any> = {
       id: order.id,
       order_number: order.orderNumber,
       customer_name: order.customerName,
@@ -342,12 +342,19 @@ export async function upsertOrderToSupabase(order: Order): Promise<{ success: bo
       items: order.items,
       subtotal: order.subtotal,
       discount_amount: order.discountAmount || 0,
+      coupon_code: order.couponCode || null,
       shipping_fee: order.shippingFee || 0,
+      shipping_type: order.shippingType || 'TAKEAWAY',
+      shipping_detail: order.shippingDetail || 'Ambil Sendiri',
+      tracking_number: order.trackingNumber || null,
+      notes: order.notes || null,
       total_amount: order.totalAmount,
       total_cogs: order.totalCogs,
       payment_method: order.paymentMethod,
       payment_status: order.paymentStatus,
       order_status: order.orderStatus,
+      pakasir_transaction_id: order.pakasirTransactionId || null,
+      is_pos_sale: !!order.isPosSale,
       created_at: order.createdAt || new Date().toISOString(),
     };
     const { error } = await client.from('orders').upsert(payload, { onConflict: 'id' });
@@ -785,14 +792,19 @@ export async function fetchOrdersFromSupabase(): Promise<Order[] | null> {
       items: item.items || [],
       subtotal: Number(item.subtotal),
       discountAmount: Number(item.discount_amount) || 0,
+      couponCode: item.coupon_code || undefined,
       shippingFee: Number(item.shipping_fee) || 0,
       shippingType: item.shipping_type || 'TAKEAWAY',
       shippingDetail: item.shipping_detail || 'Ambil Sendiri',
+      trackingNumber: item.tracking_number || undefined,
+      notes: item.notes || undefined,
       totalAmount: Number(item.total_amount),
       totalCogs: Number(item.total_cogs),
       paymentMethod: item.payment_method,
       paymentStatus: item.payment_status,
       orderStatus: item.order_status,
+      pakasirTransactionId: item.pakasir_transaction_id || undefined,
+      isPosSale: !!item.is_pos_sale,
       createdAt: item.created_at,
     }));
   } catch (err) {
@@ -1014,12 +1026,19 @@ CREATE TABLE IF NOT EXISTS public.orders (
   items JSONB NOT NULL,
   subtotal NUMERIC NOT NULL,
   discount_amount NUMERIC DEFAULT 0,
+  coupon_code TEXT,
   shipping_fee NUMERIC DEFAULT 0,
+  shipping_type TEXT DEFAULT 'TAKEAWAY',
+  shipping_detail TEXT,
+  tracking_number TEXT,
+  notes TEXT,
   total_amount NUMERIC NOT NULL,
   total_cogs NUMERIC NOT NULL,
   payment_method TEXT NOT NULL,
   payment_status TEXT NOT NULL,
   order_status TEXT NOT NULL,
+  pakasir_transaction_id TEXT,
+  is_pos_sale BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
