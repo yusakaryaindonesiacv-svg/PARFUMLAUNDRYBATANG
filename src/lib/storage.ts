@@ -584,23 +584,24 @@ export function getEffectiveStoreSettings(customSettings?: Partial<StoreSettings
     ...(customSettings || {}),
   };
 
-  const envSupabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
-  const envSupabaseKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+  const envSupabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || (import.meta as any).env?.SUPABASE_URL || '';
+  const envSupabaseKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || (import.meta as any).env?.SUPABASE_ANON_KEY || '';
   const envPakasirProject =
     (import.meta as any).env?.VITE_PAKASIR_PROJECT_KEY ||
     (import.meta as any).env?.VITE_PAKASIR_PROJECT_SLUG ||
     (import.meta as any).env?.PAKASIR_PROJECT_SLUG ||
+    (import.meta as any).env?.PAKASIR_PROJECT_KEY ||
     '';
   const envPakasirApiKey =
     (import.meta as any).env?.VITE_PAKASIR_API_KEY ||
     (import.meta as any).env?.PAKASIR_API_KEY ||
     '';
 
-  // Environment variables override local settings if set, with PERMANENT_CONFIG as reliable fallback
-  merged.supabaseUrl = envSupabaseUrl || (merged.supabaseUrl && !merged.supabaseUrl.includes('example.com') ? merged.supabaseUrl : '') || PERMANENT_CONFIG.supabaseUrl;
-  merged.supabaseAnonKey = envSupabaseKey || (merged.supabaseAnonKey && merged.supabaseAnonKey.length > 30 ? merged.supabaseAnonKey : '') || PERMANENT_CONFIG.supabaseAnonKey;
-  merged.pakasirProjectKey = envPakasirProject || (merged.pakasirProjectKey && merged.pakasirProjectKey !== 'DEMO-PAKASIR-BATANG' ? merged.pakasirProjectKey : '') || PERMANENT_CONFIG.pakasirProjectKey;
-  merged.pakasirApiKey = envPakasirApiKey || (merged.pakasirApiKey && merged.pakasirApiKey !== 'demo_api_key_pakasir_123' ? merged.pakasirApiKey : '') || PERMANENT_CONFIG.pakasirApiKey;
+  // Environment variables and PERMANENT_CONFIG take priority over legacy settings
+  merged.supabaseUrl = envSupabaseUrl || PERMANENT_CONFIG.supabaseUrl || merged.supabaseUrl || '';
+  merged.supabaseAnonKey = envSupabaseKey || PERMANENT_CONFIG.supabaseAnonKey || merged.supabaseAnonKey || '';
+  merged.pakasirProjectKey = envPakasirProject || PERMANENT_CONFIG.pakasirProjectKey || merged.pakasirProjectKey || '';
+  merged.pakasirApiKey = envPakasirApiKey || PERMANENT_CONFIG.pakasirApiKey || merged.pakasirApiKey || '';
   merged.pakasirApiUrl = 'https://app.pakasir.com/api';
 
   return merged;
