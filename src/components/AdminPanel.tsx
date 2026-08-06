@@ -39,7 +39,8 @@ import {
   deleteExpenseFromSupabase,
   upsertSettingsToSupabase,
   syncAllDataToSupabase,
-  clearSupabaseClientCache 
+  clearSupabaseClientCache,
+  uploadImageToSupabaseStorage
 } from '../lib/supabase';
 import { createPakasirTransaction } from '../lib/pakasir';
 import { STORAGE_KEYS, setStorageData, getDefaultPermissionsForRole, getEffectivePermissions } from '../lib/storage';
@@ -1831,10 +1832,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                             const file = e.target.files?.[0];
                             if (!file) return;
                             try {
-                              const compressed = await compressImageFile(file, 400, 400, 0.85);
-                              setSettings((prev) => ({ ...prev, appLogoUrl: compressed }));
+                              const url = await uploadImageToSupabaseStorage(file, 'store');
+                              setSettings((prev) => ({ ...prev, appLogoUrl: url }));
                             } catch (err) {
-                              console.error('Error compressing logo:', err);
+                              console.error('Error uploading logo:', err);
                             }
                           }}
                           className="hidden"
@@ -2929,10 +2930,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           const file = e.target.files?.[0];
                           if (file) {
                             try {
-                              const compressed = await compressImageFile(file, 800, 800, 0.75);
-                              setProdImageUrl(compressed);
+                              const url = await uploadImageToSupabaseStorage(file, 'products');
+                              setProdImageUrl(url);
                             } catch (err) {
-                              console.error('Error compressing product image:', err);
+                              console.error('Error uploading product image:', err);
                             }
                           }
                         }}
@@ -3163,12 +3164,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   const file = e.target.files?.[0];
                                   if (file) {
                                     try {
-                                      const compressed = await compressImageFile(file, 800, 800, 0.75);
+                                      const url = await uploadImageToSupabaseStorage(file, 'volumes');
                                       const updated = [...prodVolumes];
-                                      updated[idx].imageUrl = compressed;
+                                      updated[idx].imageUrl = url;
                                       setProdVolumes(updated);
                                     } catch (err) {
-                                      console.error('Error compressing variant image:', err);
+                                      console.error('Error uploading variant image:', err);
                                     }
                                   }
                                 }}
@@ -3464,11 +3465,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         const file = e.target.files?.[0];
                         if (file) {
                           try {
-                            const compressed = await compressImageFile(file, 1200, 600, 0.75);
-                            setBanImgDesktop(compressed);
-                            if (!banImgMobile) setBanImgMobile(compressed);
+                            const url = await uploadImageToSupabaseStorage(file, 'banners');
+                            setBanImgDesktop(url);
+                            if (!banImgMobile) setBanImgMobile(url);
                           } catch (err) {
-                            console.error('Error compressing banner image:', err);
+                            console.error('Error uploading banner image:', err);
                           }
                         }
                       }}
@@ -3504,10 +3505,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         const file = e.target.files?.[0];
                         if (file) {
                           try {
-                            const compressed = await compressImageFile(file, 800, 600, 0.75);
-                            setBanImgMobile(compressed);
+                            const url = await uploadImageToSupabaseStorage(file, 'banners');
+                            setBanImgMobile(url);
                           } catch (err) {
-                            console.error('Error compressing banner mobile image:', err);
+                            console.error('Error uploading banner mobile image:', err);
                           }
                         }
                       }}
