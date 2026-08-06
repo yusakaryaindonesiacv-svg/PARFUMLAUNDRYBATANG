@@ -1,4 +1,4 @@
-import { getStorageData, STORAGE_KEYS } from './storage';
+import { getEffectiveStoreSettings } from './storage';
 import { StoreSettings } from '../types';
 
 export interface PakasirPaymentResponse {
@@ -75,7 +75,7 @@ export async function createPakasirTransaction(
   amount: number,
   method: string = 'qris'
 ): Promise<PakasirPaymentResponse> {
-  const settings = getStorageData<StoreSettings>(STORAGE_KEYS.SETTINGS, {} as StoreSettings);
+  const settings = getEffectiveStoreSettings();
   const projectSlug = (settings.pakasirProjectKey || '').trim();
   const apiKey = (settings.pakasirApiKey || '').trim();
 
@@ -164,7 +164,7 @@ export async function checkPakasirTransactionStatus(
   totalPayment?: number,
   isRealApi: boolean = true
 ): Promise<PakasirDetailResponse> {
-  const settings = getStorageData<StoreSettings>(STORAGE_KEYS.SETTINGS, {} as StoreSettings);
+  const settings = getEffectiveStoreSettings();
   const projectSlug = (settings.pakasirProjectKey || '').trim();
   const apiKey = (settings.pakasirApiKey || '').trim();
 
@@ -279,7 +279,7 @@ export async function simulatePakasirPayment(
   orderNumber: string,
   amount: number
 ): Promise<{ success: boolean; message: string }> {
-  const settings = getStorageData<StoreSettings>(STORAGE_KEYS.SETTINGS, {} as StoreSettings);
+  const settings = getEffectiveStoreSettings();
   const projectSlug = (settings.pakasirProjectKey || '').trim();
   const apiKey = (settings.pakasirApiKey || '').trim();
 
