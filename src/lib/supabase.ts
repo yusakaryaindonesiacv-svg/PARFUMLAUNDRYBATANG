@@ -48,17 +48,32 @@ export function getSupabaseClient(): SupabaseClient | null {
   return null;
 }
 
-export async function testSupabaseConnection(url: string, key: string): Promise<{ success: boolean; message: string }> {
+export async function testSupabaseConnection(url: string, key: string): Promise<{ success: boolean; message: string; missingTables?: boolean }> {
   if (!url || !key) {
     return { success: false, message: 'URL dan Anon Key Supabase tidak boleh kosong.' };
   }
   try {
     const testClient = createClient(url, key);
     const { error } = await testClient.from('products').select('id').limit(1);
-    if (error && error.code !== 'PGRST116' && !error.message.includes('relation "public.products" does not exist')) {
+    
+    if (error) {
+      if (error.message?.includes('relation "public.products" does not exist') || error.code === '42P01') {
+        return { 
+          success: false, 
+          missingTables: true,
+          message: '⚠️ URL & Anon Key BENAR! Namun tabel database belum dibuat di Supabase Anda.\n\nSilakan buka SQL Editor di dashboard Supabase (https://supabase.com) lalu Paste & Run script SQL Schema yang tersedia di bawah.' 
+        };
+      }
+      if (error.code === '42501' || error.message?.includes('permission denied')) {
+        return {
+          success: false,
+          missingTables: true,
+          message: '⚠️ Tabel Supabase terdeteksi tetapi diblokir oleh Row Level Security (RLS).\n\nSilakan jalankan script SQL Schema di bawah untuk membuka akses RLS Public.'
+        };
+      }
       return { success: false, message: `Koneksi gagal: ${error.message}` };
     }
-    return { success: true, message: 'Koneksi ke Supabase Berhasil! Tabel siap digunakan.' };
+    return { success: true, message: '✓ Koneksi Supabase Berhasil & Tabel Database Siap Digunakan!' };
   } catch (err: any) {
     return { success: false, message: `Error koneksi: ${err.message || err}` };
   }
