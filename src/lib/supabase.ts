@@ -1104,7 +1104,7 @@ CREATE TABLE IF NOT EXISTS public.settings (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Buka RLS Read/Write
+-- Buka RLS Read/Write dengan Full Access (USING + WITH CHECK)
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
@@ -1116,37 +1116,41 @@ ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow Public Access Products" ON public.products;
-CREATE POLICY "Allow Public Access Products" ON public.products FOR ALL USING (true);
+CREATE POLICY "Allow Public Access Products" ON public.products FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow Public Access Categories" ON public.categories;
-CREATE POLICY "Allow Public Access Categories" ON public.categories FOR ALL USING (true);
+CREATE POLICY "Allow Public Access Categories" ON public.categories FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow Public Access Orders" ON public.orders;
-CREATE POLICY "Allow Public Access Orders" ON public.orders FOR ALL USING (true);
+CREATE POLICY "Allow Public Access Orders" ON public.orders FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow Public Access Customers" ON public.customers;
-CREATE POLICY "Allow Public Access Customers" ON public.customers FOR ALL USING (true);
+CREATE POLICY "Allow Public Access Customers" ON public.customers FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow Public Access Expenses" ON public.expenses;
-CREATE POLICY "Allow Public Access Expenses" ON public.expenses FOR ALL USING (true);
+CREATE POLICY "Allow Public Access Expenses" ON public.expenses FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow Public Access Coupons" ON public.coupons;
-CREATE POLICY "Allow Public Access Coupons" ON public.coupons FOR ALL USING (true);
+CREATE POLICY "Allow Public Access Coupons" ON public.coupons FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow Public Access Banners" ON public.banners;
-CREATE POLICY "Allow Public Access Banners" ON public.banners FOR ALL USING (true);
+CREATE POLICY "Allow Public Access Banners" ON public.banners FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow Public Access Users" ON public.users;
-CREATE POLICY "Allow Public Access Users" ON public.users FOR ALL USING (true);
+CREATE POLICY "Allow Public Access Users" ON public.users FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow Public Access Settings" ON public.settings;
-CREATE POLICY "Allow Public Access Settings" ON public.settings FOR ALL USING (true);
+CREATE POLICY "Allow Public Access Settings" ON public.settings FOR ALL USING (true) WITH CHECK (true);
 
--- 10. Storage Bucket "media" untuk Unggah Foto Produk, Logo, & Banner
+-- 10. Storage Buckets untuk Unggah Foto Produk, Logo, & Banner
 INSERT INTO storage.buckets (id, name, public) 
-VALUES ('media', 'media', true) 
+VALUES 
+  ('media', 'media', true),
+  ('products', 'products', true),
+  ('banners', 'banners', true),
+  ('store', 'store', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
 
 DROP POLICY IF EXISTS "Public Access Storage Media" ON storage.objects;
-CREATE POLICY "Public Access Storage Media" ON storage.objects FOR ALL USING (bucket_id = 'media');
+CREATE POLICY "Public Access Storage Media" ON storage.objects FOR ALL USING (bucket_id IN ('media', 'products', 'banners', 'store', 'public')) WITH CHECK (bucket_id IN ('media', 'products', 'banners', 'store', 'public'));
 `;
