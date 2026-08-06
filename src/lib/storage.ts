@@ -596,11 +596,11 @@ export function getEffectiveStoreSettings(customSettings?: Partial<StoreSettings
     (import.meta as any).env?.PAKASIR_API_KEY ||
     '';
 
-  // Environment variables override local settings if set
-  merged.supabaseUrl = envSupabaseUrl || (merged.supabaseUrl && !merged.supabaseUrl.includes('example.com') ? merged.supabaseUrl : '');
-  merged.supabaseAnonKey = envSupabaseKey || (merged.supabaseAnonKey && merged.supabaseAnonKey.length > 30 ? merged.supabaseAnonKey : '');
-  merged.pakasirProjectKey = envPakasirProject || (merged.pakasirProjectKey && merged.pakasirProjectKey !== 'DEMO-PAKASIR-BATANG' ? merged.pakasirProjectKey : '');
-  merged.pakasirApiKey = envPakasirApiKey || (merged.pakasirApiKey && merged.pakasirApiKey !== 'demo_api_key_pakasir_123' ? merged.pakasirApiKey : '');
+  // Environment variables override local settings if set, with PERMANENT_CONFIG as reliable fallback
+  merged.supabaseUrl = envSupabaseUrl || (merged.supabaseUrl && !merged.supabaseUrl.includes('example.com') ? merged.supabaseUrl : '') || PERMANENT_CONFIG.supabaseUrl;
+  merged.supabaseAnonKey = envSupabaseKey || (merged.supabaseAnonKey && merged.supabaseAnonKey.length > 30 ? merged.supabaseAnonKey : '') || PERMANENT_CONFIG.supabaseAnonKey;
+  merged.pakasirProjectKey = envPakasirProject || (merged.pakasirProjectKey && merged.pakasirProjectKey !== 'DEMO-PAKASIR-BATANG' ? merged.pakasirProjectKey : '') || PERMANENT_CONFIG.pakasirProjectKey;
+  merged.pakasirApiKey = envPakasirApiKey || (merged.pakasirApiKey && merged.pakasirApiKey !== 'demo_api_key_pakasir_123' ? merged.pakasirApiKey : '') || PERMANENT_CONFIG.pakasirApiKey;
   merged.pakasirApiUrl = 'https://app.pakasir.com/api';
 
   return merged;
