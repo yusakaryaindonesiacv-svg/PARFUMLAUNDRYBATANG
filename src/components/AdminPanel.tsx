@@ -2244,20 +2244,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <Database className="w-6 h-6 text-emerald-500" />
                     <div>
                       <h3 className="font-extrabold text-base">Database Cloud Supabase (PostgreSQL)</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Sinkronisasi data otomatis ke database cloud PostgreSQL Supabase.</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Terhubung secara aman menggunakan Vercel Environment Variables.</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleSaveSupabaseConfig}
-                      disabled={testingSupabase}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md transition-all disabled:opacity-50"
-                    >
-                      <Save className="w-4 h-4" />
-                      <span>Simpan & Connect Supabase</span>
-                    </button>
                     <button
                       type="button"
                       onClick={handleTestSupabase}
@@ -2265,20 +2256,48 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md transition-all disabled:opacity-50"
                     >
                       <RefreshCw className={`w-4 h-4 ${testingSupabase ? 'animate-spin' : ''}`} />
-                      <span>{testingSupabase ? 'Pengujian...' : 'Tes Koneksi'}</span>
+                      <span>{testingSupabase ? 'Pengujian...' : 'Tes Koneksi Supabase'}</span>
                     </button>
                   </div>
                 </div>
 
-                <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-2xl text-xs space-y-1">
-                  <div className="font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>Dual Connection Supabase (Di Panel Admin & Environment Variable Vercel):</span>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                    <span className="font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-500" /> Status Environment Variables Supabase (Vercel):
+                    </span>
+                    <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-md">
+                      Aman & Terisolasi (Vercel Env Only)
+                    </span>
                   </div>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                    1. <strong>Pengaturan Panel Admin</strong>: Mengisi URL & Anon Key di atas lalu mengklik <strong>Simpan & Connect Supabase</strong> akan langsung mengaktifkan sinkronisasi cloud real-time & menyimpan info toko ke cloud.<br />
-                    2. <strong>Vercel Environment Variable</strong>: Untuk memastikan semua HP / Laptop baru yang pertama kali membuka website langsung terhubung tanpa input manual, tambahkan juga <code>VITE_SUPABASE_URL</code> dan <code>VITE_SUPABASE_ANON_KEY</code> pada Dashboard Vercel Anda (Project Settings → Environment Variables).
-                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">1. VITE_SUPABASE_URL</div>
+                      <div className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">
+                        {settings.supabaseUrl ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> {settings.supabaseUrl}
+                          </span>
+                        ) : (
+                          <span className="text-amber-600 dark:text-amber-400">⚠️ Belum diatur di Vercel</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">2. VITE_SUPABASE_ANON_KEY</div>
+                      <div className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">
+                        {settings.supabaseAnonKey ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Terdeteksi (••••••••)
+                          </span>
+                        ) : (
+                          <span className="text-amber-600 dark:text-amber-400">⚠️ Belum diatur di Vercel</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {supabaseTestResult && (
@@ -2286,29 +2305,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     {supabaseTestResult.message}
                   </div>
                 )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Supabase URL (Project URL):</label>
-                    <input
-                      type="text"
-                      placeholder="https://xyz.supabase.co"
-                      value={settings.supabaseUrl || ''}
-                      onChange={(e) => setSettings({ ...settings, supabaseUrl: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-800 text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Supabase Anon Key (API Key):</label>
-                    <input
-                      type="password"
-                      placeholder="eyJhbGciOiJIUzI1NiIsIn..."
-                      value={settings.supabaseAnonKey || ''}
-                      onChange={(e) => setSettings({ ...settings, supabaseAnonKey: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-800 text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 font-mono"
-                    />
-                  </div>
-                </div>
 
                 <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                   <button
@@ -2384,8 +2380,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         setPakasirTestResult({
                           loading: false,
                           success: false,
-                          message: '⚠️ Project Slug dan API Key Pakasir wajib diisi.',
-                          details: 'Silakan ambil Project Slug dan API Key dari dashboard detail proyek Anda di app.pakasir.com.'
+                          message: '⚠️ Environment Variable Pakasir belum dikonfigurasi di Vercel.',
+                          details: 'Pastikan VITE_PAKASIR_PROJECT_KEY dan VITE_PAKASIR_API_KEY sudah ditambahkan di Project Settings Vercel Anda.'
                         });
                         return;
                       }
@@ -2405,7 +2401,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                           loading: false,
                           success: false,
                           message: '⚠️ Pengujian API Pakasir Menggunakan Fallback',
-                          details: res.message || 'Periksa kembali Slug Proyek dan API Key Pakasir Anda.'
+                          details: res.message || 'Periksa kembali Slug Proyek dan API Key Pakasir pada Vercel Environment Variables Anda.'
                         });
                       }
                     }}
@@ -2438,44 +2434,43 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Pakasir Project Slug (Proyek):</label>
-                    <input
-                      type="text"
-                      placeholder="Contoh: depodomain"
-                      value={settings.pakasirProjectKey}
-                      onChange={(e) => setSettings({ ...settings, pakasirProjectKey: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-800 text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 font-mono"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-1">Nama/Slug proyek dari dashboard Pakasir Anda.</p>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                    <span className="font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-500" /> Status Environment Variables Pakasir (Vercel):
+                    </span>
+                    <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-md">
+                      Aman & Terisolasi (Vercel Env Only)
+                    </span>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Pakasir API Key:</label>
-                    <input
-                      type="password"
-                      placeholder="Contoh: xxx123..."
-                      value={settings.pakasirApiKey}
-                      onChange={(e) => setSettings({ ...settings, pakasirApiKey: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-800 text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 font-mono"
-                    />
-                    <p className="text-[10px] text-slate-400 mt-1">API Key rahasia dari halaman detail Proyek Pakasir.</p>
-                  </div>
-                </div>
 
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setStorageData(STORAGE_KEYS.SETTINGS, settings);
-                      await upsertSettingsToSupabase(settings);
-                      alert('✓ Pengaturan Pakasir berhasil disimpan & disinkronkan ke Supabase Cloud Database!\n\nSetiap perangkat baru yang membuka website ini akan otomatis terhubung.');
-                    }}
-                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 shadow-md transition-all cursor-pointer"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>Simpan & Permanenkan Pakasir ke Database Cloud</span>
-                  </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">1. VITE_PAKASIR_PROJECT_KEY</div>
+                      <div className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">
+                        {settings.pakasirProjectKey ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> {settings.pakasirProjectKey}
+                          </span>
+                        ) : (
+                          <span className="text-amber-600 dark:text-amber-400">⚠️ Belum diatur di Vercel</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1">2. VITE_PAKASIR_API_KEY</div>
+                      <div className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">
+                        {settings.pakasirApiKey ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Terdeteksi (••••••••)
+                          </span>
+                        ) : (
+                          <span className="text-amber-600 dark:text-amber-400">⚠️ Belum diatur di Vercel</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs space-y-2.5 text-slate-600 dark:text-slate-300">
