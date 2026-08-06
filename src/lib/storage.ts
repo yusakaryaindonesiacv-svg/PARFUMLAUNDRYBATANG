@@ -195,12 +195,12 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   baseRatePerKm: 2000,
   minDeliveryFee: 5000,
   freeDeliveryMinOrder: 250000,
-  pakasirProjectKey: 'parfum-laundry-batang',
-  pakasirApiKey: '7IXNQUn8RzLNgpDRHacqWHpit6FTSBVj',
+  pakasirProjectKey: '',
+  pakasirApiKey: '',
   pakasirApiUrl: 'https://app.pakasir.com/api',
   googleSheetsWebappUrl: '',
-  supabaseUrl: 'https://lwcksavogzbkostwlwtv.supabase.co',
-  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3Y2tzYXZvZ3pia29zdHdsd3R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2NDc1MjUsImV4cCI6MjEwMTIyMzUyNX0.OoIqlADsRxC1Bjj-UfYYrx_N4gkRAYG1PlPxO2bOwHs',
+  supabaseUrl: '',
+  supabaseAnonKey: '',
   enabledNationalCouriers: ['JNT', 'JNE', 'POS', 'SICEPAT', 'ANTERAJA', 'WAHANA', 'NINJA', 'LION'],
 };
 
@@ -577,7 +577,7 @@ export const DEFAULT_ORDERS: Order[] = [
   }
 ];
 
-// Helper function to resolve effective store settings with permanent code & env fallbacks
+// Helper function to resolve effective store settings with env fallbacks
 export function getEffectiveStoreSettings(customSettings?: Partial<StoreSettings> | null): StoreSettings {
   const merged: StoreSettings = {
     ...DEFAULT_SETTINGS,
@@ -596,33 +596,11 @@ export function getEffectiveStoreSettings(customSettings?: Partial<StoreSettings
     (import.meta as any).env?.PAKASIR_API_KEY ||
     '';
 
-  // Sanitize stale or dummy Supabase URL
-  let supUrl = (merged.supabaseUrl || '').trim();
-  if (!supUrl || supUrl.includes('wlpbmx4tlehy45ax2jmzy5') || supUrl.includes('example.com') || supUrl.includes('xxxxxxxxxxxx')) {
-    supUrl = envSupabaseUrl || DEFAULT_SETTINGS.supabaseUrl || PERMANENT_CONFIG.supabaseUrl;
-  }
-
-  // Sanitize stale or empty Supabase Anon Key
-  let supKey = (merged.supabaseAnonKey || '').trim();
-  if (!supKey || supKey.length < 50) {
-    supKey = envSupabaseKey || DEFAULT_SETTINGS.supabaseAnonKey || PERMANENT_CONFIG.supabaseAnonKey;
-  }
-
-  // Sanitize Pakasir credentials
-  let pakProject = (merged.pakasirProjectKey || '').trim();
-  if (!pakProject || pakProject === 'DEMO-PAKASIR-BATANG' || pakProject === 'demo') {
-    pakProject = envPakasirProject || DEFAULT_SETTINGS.pakasirProjectKey || PERMANENT_CONFIG.pakasirProjectKey || 'parfum-laundry-batang';
-  }
-
-  let pakKey = (merged.pakasirApiKey || '').trim();
-  if (!pakKey || pakKey === 'demo_api_key_pakasir_123' || pakKey === 'demo') {
-    pakKey = envPakasirApiKey || DEFAULT_SETTINGS.pakasirApiKey || PERMANENT_CONFIG.pakasirApiKey || '7IXNQUn8RzLNgpDRHacqWHpit6FTSBVj';
-  }
-
-  merged.supabaseUrl = supUrl;
-  merged.supabaseAnonKey = supKey;
-  merged.pakasirProjectKey = pakProject;
-  merged.pakasirApiKey = pakKey;
+  // Environment variables override local settings if set
+  merged.supabaseUrl = envSupabaseUrl || (merged.supabaseUrl && !merged.supabaseUrl.includes('example.com') ? merged.supabaseUrl : '');
+  merged.supabaseAnonKey = envSupabaseKey || (merged.supabaseAnonKey && merged.supabaseAnonKey.length > 30 ? merged.supabaseAnonKey : '');
+  merged.pakasirProjectKey = envPakasirProject || (merged.pakasirProjectKey && merged.pakasirProjectKey !== 'DEMO-PAKASIR-BATANG' ? merged.pakasirProjectKey : '');
+  merged.pakasirApiKey = envPakasirApiKey || (merged.pakasirApiKey && merged.pakasirApiKey !== 'demo_api_key_pakasir_123' ? merged.pakasirApiKey : '');
   merged.pakasirApiUrl = 'https://app.pakasir.com/api';
 
   return merged;
