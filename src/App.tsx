@@ -31,6 +31,7 @@ import {
   upsertProductToSupabase,
   upsertCategoryToSupabase,
   upsertBannerToSupabase,
+  upsertOrderToSupabase,
   getSupabaseClient
 } from './lib/supabase';
 
@@ -502,11 +503,20 @@ export default function App() {
 
   // New Order Placed Handler (Online / Checkout)
   const handleOrderPlaced = (newOrder: Order) => {
-    setOrders((prev) => [newOrder, ...prev]);
+    setOrders((prev) => {
+      const next = [newOrder, ...prev];
+      setStorageData(STORAGE_KEYS.ORDERS, next);
+      return next;
+    });
+
+    // Save order directly to Supabase DB
+    upsertOrderToSupabase(newOrder).catch((err) =>
+      console.warn('Gagal menyimpan order ke Supabase:', err)
+    );
 
     // Automatically deduct stock and increment salesCount for purchased items
-    setProducts((prevProducts) =>
-      prevProducts.map((p) => {
+    setProducts((prevProducts) => {
+      const updatedProducts = prevProducts.map((p) => {
         const purchasedQty = newOrder.items
           .filter((item) => item.productId === p.id)
           .reduce((sum, item) => sum + item.quantity, 0);
@@ -520,13 +530,23 @@ export default function App() {
           }
           return v;
         });
-        return {
+
+        const updatedP = {
           ...p,
           salesCount: (p.salesCount || 0) + purchasedQty,
           volumes: updatedVolumes,
         };
-      })
-    );
+
+        // Sync product stock update to Supabase
+        if (purchasedQty > 0) {
+          upsertProductToSupabase(updatedP).catch(() => {});
+        }
+        return updatedP;
+      });
+
+      setStorageData(STORAGE_KEYS.PRODUCTS, updatedProducts);
+      return updatedProducts;
+    });
 
     // Empty cart & reset coupon
     setCart([]);
@@ -535,11 +555,20 @@ export default function App() {
 
   // POS Sale Handler (Kasir)
   const handleCompletePosSale = (newOrder: Order) => {
-    setOrders((prev) => [newOrder, ...prev]);
+    setOrders((prev) => {
+      const next = [newOrder, ...prev];
+      setStorageData(STORAGE_KEYS.ORDERS, next);
+      return next;
+    });
+
+    // Save POS order directly to Supabase DB
+    upsertOrderToSupabase(newOrder).catch((err) =>
+      console.warn('Gagal menyimpan POS order ke Supabase:', err)
+    );
 
     // Deduct stock & increment salesCount for POS
-    setProducts((prevProducts) =>
-      prevProducts.map((p) => {
+    setProducts((prevProducts) => {
+      const updatedProducts = prevProducts.map((p) => {
         const purchasedQty = newOrder.items
           .filter((item) => item.productId === p.id)
           .reduce((sum, item) => sum + item.quantity, 0);
@@ -553,13 +582,23 @@ export default function App() {
           }
           return v;
         });
-        return {
+
+        const updatedP = {
           ...p,
           salesCount: (p.salesCount || 0) + purchasedQty,
           volumes: updatedVolumes,
         };
-      })
-    );
+
+        // Sync product stock update to Supabase
+        if (purchasedQty > 0) {
+          upsertProductToSupabase(updatedP).catch(() => {});
+        }
+        return updatedP;
+      });
+
+      setStorageData(STORAGE_KEYS.PRODUCTS, updatedProducts);
+      return updatedProducts;
+    });
   };
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
