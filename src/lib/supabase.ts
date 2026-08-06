@@ -1,7 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getStorageData, STORAGE_KEYS } from './storage';
 import { Product, Category, Order, Customer, Expense, Coupon, CarouselBanner, StoreSettings, User } from '../types';
-import { compressBase64IfNeeded } from './imageUtils';
+import { compressBase64IfNeeded, compressImageFile } from './imageUtils';
 import { PERMANENT_CONFIG } from './config';
 
 let cachedClient: SupabaseClient | null = null;
@@ -79,18 +79,89 @@ export async function testSupabaseConnection(url: string, key: string): Promise<
   }
 }
 
+/**
+ * Uploads image (File object or Base64 string) to Supabase Storage bucket ('media').
+ * Returns public Supabase CDN URL if bucket exists, or falls back gracefully to compressed Base64.
+ */
+export async function uploadImageToSupabaseStorage(
+  fileOrBase64: File | string,
+  folder = 'products'
+): Promise<string> {
+  if (!fileOrBase64) return '';
+
+  const client = getSupabaseClient();
+
+  if (typeof fileOrBase64 === 'string' && fileOrBase64.startsWith('http')) {
+    return fileOrBase64;
+  }
+
+  if (!client) {
+    if (typeof fileOrBase64 === 'string') {
+      return await compressBase64IfNeeded(fileOrBase64, 600, 600, 0.7);
+    }
+    return await compressImageFile(fileOrBase64, 600, 600, 0.75);
+  }
+
+  try {
+    let fileToUpload: Blob;
+    let fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.jpg`;
+
+    if (typeof fileOrBase64 === 'string') {
+      if (!fileOrBase64.startsWith('data:image')) {
+        return fileOrBase64;
+      }
+      const arr = fileOrBase64.split(',');
+      const mimeMatch = arr[0].match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      fileToUpload = new Blob([u8arr], { type: mime });
+    } else {
+      fileToUpload = fileOrBase64;
+      const ext = fileOrBase64.name.split('.').pop() || 'jpg';
+      fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+    }
+
+    const { data, error } = await client.storage.from('media').upload(fileName, fileToUpload, {
+      cacheControl: '3600',
+      upsert: true,
+    });
+
+    if (error) {
+      console.warn('Fallback storage ke Base64 (Storage Bucket "media" belum dibuat):', error.message);
+      if (typeof fileOrBase64 === 'string') {
+        return await compressBase64IfNeeded(fileOrBase64, 600, 600, 0.7);
+      }
+      return await compressImageFile(fileOrBase64, 600, 600, 0.75);
+    }
+
+    const { data: publicUrlData } = client.storage.from('media').getPublicUrl(data.path);
+    return publicUrlData.publicUrl;
+  } catch (err: any) {
+    console.warn('Error upload image ke Supabase Storage:', err);
+    if (typeof fileOrBase64 === 'string') {
+      return await compressBase64IfNeeded(fileOrBase64, 600, 600, 0.7);
+    }
+    return await compressImageFile(fileOrBase64, 600, 600, 0.75);
+  }
+}
+
 // --- SUPABASE CRUD OPERATIONS FOR PRODUCTS ---
 export async function upsertProductToSupabase(product: Product): Promise<{ success: boolean; error?: string }> {
   const client = getSupabaseClient();
   if (!client) return { success: false, error: 'Supabase belum terkonfigurasi' };
 
   try {
-    const compressedImageUrl = await compressBase64IfNeeded(product.imageUrl || '', 600, 600, 0.7);
+    const finalImageUrl = product.imageUrl ? await uploadImageToSupabaseStorage(product.imageUrl, 'products') : '';
 
-    const compressedVolumes = await Promise.all(
+    const finalVolumes = await Promise.all(
       (product.volumes || []).map(async (v) => ({
         ...v,
-        imageUrl: v.imageUrl ? await compressBase64IfNeeded(v.imageUrl, 600, 600, 0.7) : undefined,
+        imageUrl: v.imageUrl ? await uploadImageToSupabaseStorage(v.imageUrl, 'volumes') : undefined,
       }))
     );
 
@@ -101,10 +172,10 @@ export async function upsertProductToSupabase(product: Product): Promise<{ succe
       category: product.category,
       scent_family: product.scentFamily || '',
       description: product.description || '',
-      image_url: compressedImageUrl,
+      image_url: finalImageUrl,
       rating: product.rating || 4.8,
       is_popular: !!product.isPopular,
-      volumes: compressedVolumes,
+      volumes: finalVolumes,
       created_at: product.createdAt || new Date().toISOString(),
     };
 
@@ -408,9 +479,9 @@ export async function upsertBannerToSupabase(banner: CarouselBanner): Promise<{ 
   if (!client) return { success: false, error: 'Supabase belum terkonfigurasi' };
 
   try {
-    const imgDesktop = await compressBase64IfNeeded(banner.imageUrlDesktop || '', 1000, 600, 0.75);
-    const imgTablet = await compressBase64IfNeeded(banner.imageUrlTablet || banner.imageUrlDesktop || '', 800, 500, 0.75);
-    const imgMobile = await compressBase64IfNeeded(banner.imageUrlMobile || banner.imageUrlDesktop || '', 600, 400, 0.75);
+    const imgDesktop = banner.imageUrlDesktop ? await uploadImageToSupabaseStorage(banner.imageUrlDesktop, 'banners') : '';
+    const imgTablet = banner.imageUrlTablet ? await uploadImageToSupabaseStorage(banner.imageUrlTablet, 'banners') : imgDesktop;
+    const imgMobile = banner.imageUrlMobile ? await uploadImageToSupabaseStorage(banner.imageUrlMobile, 'banners') : imgDesktop;
 
     const payload = {
       id: banner.id,
@@ -680,12 +751,14 @@ export async function upsertSettingsToSupabase(settings: StoreSettings): Promise
   if (!client) return { success: false, error: 'Supabase belum terkonfigurasi' };
 
   try {
+    const logoUrl = settings.appLogoUrl ? await uploadImageToSupabaseStorage(settings.appLogoUrl, 'store') : '';
+
     const fullPayload = {
       id: 'store_settings',
       store_name: settings.storeName,
       tagline: settings.tagline || '',
       top_announcement_text: settings.topAnnouncementText || '',
-      app_logo_url: settings.appLogoUrl || '',
+      app_logo_url: logoUrl,
       phone: settings.phone || '',
       address: settings.address || '',
       city: settings.city || '',
@@ -1013,4 +1086,12 @@ CREATE POLICY "Allow Public Access Users" ON public.users FOR ALL USING (true);
 
 DROP POLICY IF EXISTS "Allow Public Access Settings" ON public.settings;
 CREATE POLICY "Allow Public Access Settings" ON public.settings FOR ALL USING (true);
+
+-- 10. Storage Bucket "media" untuk Unggah Foto Produk, Logo, & Banner
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('media', 'media', true) 
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DROP POLICY IF EXISTS "Public Access Storage Media" ON storage.objects;
+CREATE POLICY "Public Access Storage Media" ON storage.objects FOR ALL USING (bucket_id = 'media');
 `;
