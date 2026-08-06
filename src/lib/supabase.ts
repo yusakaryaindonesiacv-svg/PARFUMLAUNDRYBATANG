@@ -95,11 +95,20 @@ export async function uploadImageToSupabaseStorage(
     return fileOrBase64;
   }
 
-  if (!client) {
-    if (typeof fileOrBase64 === 'string') {
-      return await compressBase64IfNeeded(fileOrBase64, 600, 600, 0.7);
+  // Fallback helper for lightweight base64 compression
+  const compressFallback = async (input: File | string): Promise<string> => {
+    try {
+      if (typeof input === 'string') {
+        return await compressBase64IfNeeded(input, 350, 350, 0.5);
+      }
+      return await compressImageFile(input, 350, 350, 0.5);
+    } catch {
+      return typeof input === 'string' ? input : '';
     }
-    return await compressImageFile(fileOrBase64, 600, 600, 0.75);
+  };
+
+  if (!client) {
+    return await compressFallback(fileOrBase64);
   }
 
   try {
@@ -126,27 +135,32 @@ export async function uploadImageToSupabaseStorage(
       fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
     }
 
-    const { data, error } = await client.storage.from('media').upload(fileName, fileToUpload, {
-      cacheControl: '3600',
-      upsert: true,
-    });
+    // Attempt buckets: 'media', 'public', 'images', 'products'
+    const bucketsToTry = ['media', 'public', 'images', 'products'];
 
-    if (error) {
-      console.warn('Fallback storage ke Base64 (Storage Bucket "media" belum dibuat):', error.message);
-      if (typeof fileOrBase64 === 'string') {
-        return await compressBase64IfNeeded(fileOrBase64, 600, 600, 0.7);
+    for (const bucketName of bucketsToTry) {
+      try {
+        const { data, error } = await client.storage.from(bucketName).upload(fileName, fileToUpload, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+        if (!error && data?.path) {
+          const { data: publicUrlData } = client.storage.from(bucketName).getPublicUrl(data.path);
+          if (publicUrlData?.publicUrl) {
+            return publicUrlData.publicUrl;
+          }
+        }
+      } catch (bErr) {
+        console.warn(`Attempt bucket '${bucketName}' error:`, bErr);
       }
-      return await compressImageFile(fileOrBase64, 600, 600, 0.75);
     }
 
-    const { data: publicUrlData } = client.storage.from('media').getPublicUrl(data.path);
-    return publicUrlData.publicUrl;
+    // If storage upload fails on all buckets, fallback to compact lightweight Base64
+    return await compressFallback(fileOrBase64);
   } catch (err: any) {
     console.warn('Error upload image ke Supabase Storage:', err);
-    if (typeof fileOrBase64 === 'string') {
-      return await compressBase64IfNeeded(fileOrBase64, 600, 600, 0.7);
-    }
-    return await compressImageFile(fileOrBase64, 600, 600, 0.75);
+    return await compressFallback(fileOrBase64);
   }
 }
 
@@ -216,21 +230,29 @@ export async function fetchProductsFromSupabase(): Promise<Product[] | null> {
   if (!client) return null;
 
   try {
-    const { data, error } = await client.from('products').select('*').order('created_at', { ascending: false });
-    if (error || !data) return null;
+    let { data, error } = await client.from('products').select('*').order('created_at', { ascending: false });
+    if (error) {
+      const retry = await client.from('products').select('*');
+      data = retry.data;
+      error = retry.error;
+    }
+    if (error || !data) {
+      console.warn('Fetch products error:', error?.message);
+      return null;
+    }
 
     return data.map(item => ({
-      id: item.id,
-      code: item.code,
-      name: item.name,
-      category: item.category,
+      id: String(item.id),
+      code: item.code || String(item.id),
+      name: item.name || 'Produk Tanpa Nama',
+      category: item.category || 'Lainnya',
       scentFamily: item.scent_family || undefined,
       description: item.description || '',
       imageUrl: item.image_url || '',
       rating: item.rating ? Number(item.rating) : 4.8,
       isPopular: !!item.is_popular,
       volumes: item.volumes || [],
-      createdAt: item.created_at,
+      createdAt: item.created_at || new Date().toISOString(),
     }));
   } catch (err) {
     console.error('Error fetching products from Supabase:', err);
@@ -288,8 +310,16 @@ export async function fetchCategoriesFromSupabase(): Promise<Category[] | null> 
   if (!client) return null;
 
   try {
-    const { data, error } = await client.from('categories').select('*').order('name', { ascending: true });
-    if (error || !data) return null;
+    let { data, error } = await client.from('categories').select('*').order('name', { ascending: true });
+    if (error) {
+      const retry = await client.from('categories').select('*');
+      data = retry.data;
+      error = retry.error;
+    }
+    if (error || !data) {
+      console.warn('Fetch categories error:', error?.message);
+      return null;
+    }
     return data.map(c => ({ id: String(c.id), name: String(c.name), description: c.description || '' }));
   } catch (err) {
     console.error('Error fetching categories from Supabase:', err);
@@ -631,11 +661,16 @@ export async function fetchCustomersFromSupabase(): Promise<Customer[] | null> {
   const client = getSupabaseClient();
   if (!client) return null;
   try {
-    const { data, error } = await client.from('customers').select('*').order('name', { ascending: true });
+    let { data, error } = await client.from('customers').select('*').order('name', { ascending: true });
+    if (error) {
+      const retry = await client.from('customers').select('*');
+      data = retry.data;
+      error = retry.error;
+    }
     if (error || !data) return null;
     return data.map(item => ({
-      id: item.id,
-      name: item.name,
+      id: String(item.id),
+      name: item.name || '',
       phone: item.phone || '',
       address: item.address || '',
       district: item.district || '',
@@ -654,10 +689,15 @@ export async function fetchCouponsFromSupabase(): Promise<Coupon[] | null> {
   const client = getSupabaseClient();
   if (!client) return null;
   try {
-    const { data, error } = await client.from('coupons').select('*').order('code', { ascending: true });
+    let { data, error } = await client.from('coupons').select('*').order('code', { ascending: true });
+    if (error) {
+      const retry = await client.from('coupons').select('*');
+      data = retry.data;
+      error = retry.error;
+    }
     if (error || !data) return null;
     return data.map(item => ({
-      id: item.id,
+      id: String(item.id),
       code: item.code,
       discountType: item.discount_type as any,
       discountValue: Number(item.discount_value),
@@ -676,10 +716,15 @@ export async function fetchBannersFromSupabase(): Promise<CarouselBanner[] | nul
   const client = getSupabaseClient();
   if (!client) return null;
   try {
-    const { data, error } = await client.from('banners').select('*').order('banner_order', { ascending: true });
+    let { data, error } = await client.from('banners').select('*').order('banner_order', { ascending: true });
+    if (error) {
+      const retry = await client.from('banners').select('*');
+      data = retry.data;
+      error = retry.error;
+    }
     if (error || !data) return null;
     return data.map(item => ({
-      id: item.id,
+      id: String(item.id),
       title: item.title,
       subtitle: item.subtitle || '',
       ctaText: item.cta_text || '',
@@ -700,10 +745,15 @@ export async function fetchExpensesFromSupabase(): Promise<Expense[] | null> {
   const client = getSupabaseClient();
   if (!client) return null;
   try {
-    const { data, error } = await client.from('expenses').select('*').order('date', { ascending: false });
+    let { data, error } = await client.from('expenses').select('*').order('date', { ascending: false });
+    if (error) {
+      const retry = await client.from('expenses').select('*');
+      data = retry.data;
+      error = retry.error;
+    }
     if (error || !data) return null;
     return data.map(item => ({
-      id: item.id,
+      id: String(item.id),
       title: item.title,
       category: item.category as any,
       amount: Number(item.amount),
@@ -719,10 +769,15 @@ export async function fetchOrdersFromSupabase(): Promise<Order[] | null> {
   const client = getSupabaseClient();
   if (!client) return null;
   try {
-    const { data, error } = await client.from('orders').select('*').order('created_at', { ascending: false });
+    let { data, error } = await client.from('orders').select('*').order('created_at', { ascending: false });
+    if (error) {
+      const retry = await client.from('orders').select('*');
+      data = retry.data;
+      error = retry.error;
+    }
     if (error || !data) return null;
     return data.map(item => ({
-      id: item.id,
+      id: String(item.id),
       orderNumber: item.order_number,
       customerName: item.customer_name,
       customerPhone: item.customer_phone || '',
