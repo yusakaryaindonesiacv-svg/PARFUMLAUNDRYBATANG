@@ -98,14 +98,8 @@ export default function App() {
           if (catRes.value.length > 0) {
             setCategories(catRes.value);
             setStorageData(STORAGE_KEYS.CATEGORIES, catRes.value);
-          } else {
-            // Auto seed categories to Supabase if empty
-            setCategories(prev => {
-              if (prev.length > 0) {
-                prev.forEach(c => upsertCategoryToSupabase(c));
-              }
-              return prev;
-            });
+          } else if (categories.length > 0) {
+            Promise.all(categories.map(c => upsertCategoryToSupabase(c))).catch(e => console.warn('Auto seed categories error:', e));
           }
         }
 
@@ -113,14 +107,8 @@ export default function App() {
           if (prodRes.value.length > 0) {
             setProducts(prodRes.value);
             setStorageData(STORAGE_KEYS.PRODUCTS, prodRes.value);
-          } else {
-            // Auto seed products to Supabase if empty
-            setProducts(prev => {
-              if (prev.length > 0) {
-                prev.forEach(p => upsertProductToSupabase(p));
-              }
-              return prev;
-            });
+          } else if (products.length > 0) {
+            Promise.all(products.map(p => upsertProductToSupabase(p))).catch(e => console.warn('Auto seed products error:', e));
           }
         }
 
@@ -138,13 +126,8 @@ export default function App() {
           if (bannerRes.value.length > 0) {
             setBanners(bannerRes.value);
             setStorageData(STORAGE_KEYS.BANNERS, bannerRes.value);
-          } else {
-            setBanners(prev => {
-              if (prev.length > 0) {
-                prev.forEach(b => upsertBannerToSupabase(b));
-              }
-              return prev;
-            });
+          } else if (banners.length > 0) {
+            Promise.all(banners.map(b => upsertBannerToSupabase(b))).catch(e => console.warn('Auto seed banners error:', e));
           }
         }
 
