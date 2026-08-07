@@ -827,8 +827,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       countExps = remoteExps.length;
     }
     if (remoteOrds !== null) {
-      setOrders(remoteOrds);
-      setStorageData(STORAGE_KEYS.ORDERS, remoteOrds);
+      setOrders(prev => {
+        const mergedMap = new Map<string, Order>();
+        prev.forEach(o => mergedMap.set(o.id, o));
+        remoteOrds.forEach(ro => mergedMap.set(ro.id, ro));
+        const merged = Array.from(mergedMap.values());
+        merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setStorageData(STORAGE_KEYS.ORDERS, merged);
+        return merged;
+      });
       countOrds = remoteOrds.length;
     }
 
@@ -1067,10 +1074,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         productId: prod.id,
         volumeId: vol.id,
         productName: prod.name,
-        volumeName: vol.volume,
+        volumeName: vol.name || 'Varian',
+        volumeMl: vol.volumeMl || 250,
+        unitPrice: vol.price,
+        originalPrice: vol.originalPrice || vol.price,
+        cogs: vol.cogs || 0,
         quantity: manualQty,
-        price: vol.price,
-        imageUrl: prod.imageUrl,
+        imageUrl: prod.imageUrl || '',
       }],
       subtotal,
       discountAmount: 0,
