@@ -138,8 +138,28 @@ export default function App() {
         }
 
         if (ordRes.status === 'fulfilled' && ordRes.value !== null) {
-          setOrders(ordRes.value);
-          setStorageData(STORAGE_KEYS.ORDERS, ordRes.value);
+          const remoteOrders = ordRes.value;
+          setOrders((prev) => {
+            const mergedMap = new Map<string, Order>();
+            // Add local orders first
+            prev.forEach((o) => mergedMap.set(o.id, o));
+            // Add or overwrite with remote orders
+            remoteOrders.forEach((ro) => mergedMap.set(ro.id, ro));
+            const merged = Array.from(mergedMap.values());
+            merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setStorageData(STORAGE_KEYS.ORDERS, merged);
+
+            // Auto seed any local order that is NOT yet in Supabase
+            const remoteIds = new Set(remoteOrders.map((ro) => ro.id));
+            const missingInRemote = prev.filter((o) => !remoteIds.has(o.id));
+            if (missingInRemote.length > 0) {
+              Promise.all(missingInRemote.map((o) => upsertOrderToSupabase(o)))
+                .then(() => console.log(`Auto-synced ${missingInRemote.length} missing local transactions to Supabase`))
+                .catch((e) => console.warn('Auto-sync orders error:', e));
+            }
+
+            return merged;
+          });
         }
 
         if (userRes.status === 'fulfilled' && userRes.value !== null) {
@@ -502,7 +522,7 @@ export default function App() {
   };
 
   // New Order Placed Handler (Online / Checkout)
-  const handleOrderPlaced = (newOrder: Order) => {
+  const handleOrderPlaced = async (newOrder: Order) => {
     setOrders((prev) => {
       const next = [newOrder, ...prev];
       setStorageData(STORAGE_KEYS.ORDERS, next);
@@ -510,9 +530,12 @@ export default function App() {
     });
 
     // Save order directly to Supabase DB
-    upsertOrderToSupabase(newOrder).catch((err) =>
-      console.warn('Gagal menyimpan order ke Supabase:', err)
-    );
+    const supabaseRes = await upsertOrderToSupabase(newOrder);
+    if (supabaseRes.success) {
+      console.log(`✓ Pesanan #${newOrder.orderNumber} berhasil tersimpan ke Supabase!`);
+    } else {
+      console.warn(`⚠️ Pesanan #${newOrder.orderNumber} tersimpan di lokal saja:`, supabaseRes.error);
+    }
 
     // Automatically deduct stock and increment salesCount for purchased items
     setProducts((prevProducts) => {
@@ -554,7 +577,7 @@ export default function App() {
   };
 
   // POS Sale Handler (Kasir)
-  const handleCompletePosSale = (newOrder: Order) => {
+  const handleCompletePosSale = async (newOrder: Order) => {
     setOrders((prev) => {
       const next = [newOrder, ...prev];
       setStorageData(STORAGE_KEYS.ORDERS, next);
@@ -562,9 +585,47 @@ export default function App() {
     });
 
     // Save POS order directly to Supabase DB
-    upsertOrderToSupabase(newOrder).catch((err) =>
-      console.warn('Gagal menyimpan POS order ke Supabase:', err)
-    );
+    const supabaseRes = await upsertOrderToSupabase(newOrder);
+    if (supabaseRes.success) {
+      console.log(`✓ Transaksi POS #${newOrder.orderNumber} berhasil tersimpan ke Supabase!`);
+    } else {
+      console.warn(`⚠️ Transaksi POS #${newOrder.orderNumber} tersimpan di lokal saja:`, supabaseRes.error);
+    }
+
+    // If order has associated customer, update CRM points/totalSpent/debt and sync to Supabase
+    if (newOrder.customerId) {
+      setCustomers((prevCustomers) => {
+        const updatedCusts = prevCustomers.map((c) => {
+          if (c.id === newOrder.customerId) {
+            const addedSpent = newOrder.totalAmount;
+            const newTotalSpent = (c.totalSpent || 0) + addedSpent;
+            const addedPoints = Math.floor(addedSpent / 10000);
+            const newPoints = (c.points || 0) + addedPoints;
+            const newDebt = newOrder.paymentMethod === 'HUTANG' ? (c.debtBalance || 0) + addedSpent : (c.debtBalance || 0);
+
+            let newTier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' = 'Bronze';
+            if (newTotalSpent >= 5000000) newTier = 'Platinum';
+            else if (newTotalSpent >= 2000000) newTier = 'Gold';
+            else if (newTotalSpent >= 500000) newTier = 'Silver';
+
+            const updatedC: Customer = {
+              ...c,
+              totalSpent: newTotalSpent,
+              points: newPoints,
+              debtBalance: newDebt,
+              membershipTier: newTier,
+            };
+
+            upsertCustomerToSupabase(updatedC).catch(() => {});
+            return updatedC;
+          }
+          return c;
+        });
+
+        setStorageData(STORAGE_KEYS.CUSTOMERS, updatedCusts);
+        return updatedCusts;
+      });
+    }
 
     // Deduct stock & increment salesCount for POS
     setProducts((prevProducts) => {
