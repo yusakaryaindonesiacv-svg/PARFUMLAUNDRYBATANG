@@ -54,7 +54,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
     { id: 'catalog', label: 'Katalog Produk', icon: ShoppingBag, badge: 'Lengkap', show: permissions.canAccessCatalog },
     { id: 'pos', label: 'Kasir POS Off/Online', icon: Calculator, badge: 'Kasir', show: permissions.canAccessPos },
     { id: 'tracking', label: 'Tracking Pesanan', icon: Truck, badge: 'Cek Resi', show: permissions.canAccessTracking },
-    { id: 'admin', label: 'Panel Admin Store', icon: ShieldCheck, badge: 'Admin', show: permissions.canAccessAdmin },
+    { id: 'admin', label: 'Panel Admin Store', icon: ShieldCheck, badge: 'Admin', show: true },
   ];
 
   const navItems = allNavItems.filter(item => item.show);
