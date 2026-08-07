@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ShieldCheck, Key, Lock } from 'lucide-react';
 import { 
   getStorageData, 
   setStorageData, 
@@ -233,9 +234,6 @@ export default function App() {
   // Auto fallback to home tab if activeTab is not permitted for current user
   useEffect(() => {
     if (activeTab === 'pos' && !userPermissions.canAccessPos) {
-      setActiveTab('home');
-    }
-    if (activeTab === 'admin' && !userPermissions.canAccessAdmin) {
       setActiveTab('home');
     }
     if (activeTab === 'catalog' && !userPermissions.canAccessCatalog) {
@@ -777,6 +775,40 @@ export default function App() {
 
           {activeTab === 'tracking' && userPermissions.canAccessTracking && (
             <OrderTracking orders={orders} />
+          )}
+
+          {activeTab === 'admin' && !userPermissions.canAccessAdmin && (
+            <div className="max-w-md mx-auto my-12 p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl text-center space-y-6">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-inner">
+                <ShieldCheck className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-xl font-black text-slate-900 dark:text-white">Akses Panel Admin Terkunci</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Halaman ini khusus untuk pengelola store ({settings.storeName || 'Parfum Laundry Batang'}). Silakan login sebagai Administrator untuk mengelola produk, transaksi, laporan keuangan, dan integrasi Supabase.
+                </p>
+              </div>
+              <div className="space-y-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const adminUser = users.find((u) => u.role === 'admin') || DEFAULT_USERS[0];
+                    setCurrentUser(adminUser);
+                    setStorageData(STORAGE_KEYS.CURRENT_USER, adminUser);
+                  }}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:opacity-95 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Key className="w-4 h-4" /> Login Sebagai Admin Utama Store
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAuthOpen(true)}
+                  className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  Buka Form Login / Pilih Akun
+                </button>
+              </div>
+            </div>
           )}
 
           {activeTab === 'admin' && userPermissions.canAccessAdmin && (
