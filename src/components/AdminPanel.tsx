@@ -97,35 +97,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 }) => {
   const [activeAdminTab, setActiveAdminTab] = useState<'dashboard' | 'products' | 'categories' | 'orders' | 'financials' | 'crm' | 'coupons' | 'banners' | 'users' | 'settings'>('dashboard');
 
-  // Stats Calculations
-  const totalRevenue = (orders || []).filter(o => o && (o.paymentStatus || '').toUpperCase() === 'PAID').reduce((acc, o) => acc + (o.totalAmount || 0), 0);
-  const totalCogs = (orders || []).filter(o => o && (o.paymentStatus || '').toUpperCase() === 'PAID').reduce((acc, o) => acc + (o.totalCogs || 0), 0);
-  const totalExpenses = (expenses || []).reduce((acc, e) => acc + (e?.amount || 0), 0);
-  const grossProfit = totalRevenue - totalCogs;
-  const netProfit = grossProfit - totalExpenses;
-
-  // Filtered Orders Calculation
-  const filteredOrders = (orders || []).filter(o => {
-    if (!o) return false;
-    const search = (orderSearchTerm || '').toLowerCase().trim();
-    if (search) {
-      const matchNo = (o.orderNumber || '').toLowerCase().includes(search);
-      const matchName = (o.customerName || '').toLowerCase().includes(search);
-      const matchPhone = (o.customerPhone || '').toLowerCase().includes(search);
-      const matchAddr = (o.customerAddress || '').toLowerCase().includes(search);
-      const matchResi = (o.trackingNumber || '').toLowerCase().includes(search);
-      if (!matchNo && !matchName && !matchPhone && !matchAddr && !matchResi) return false;
-    }
-    const orderStatus = (o.orderStatus || 'DELIVERED').toUpperCase();
-    const paymentStatus = (o.paymentStatus || 'PAID').toUpperCase();
-
-    if (orderStatusFilter !== 'ALL' && orderStatus !== orderStatusFilter.toUpperCase()) return false;
-    if (orderPaymentFilter !== 'ALL' && paymentStatus !== orderPaymentFilter.toUpperCase()) return false;
-    if (orderChannelFilter === 'POS' && !o.isPosSale) return false;
-    if (orderChannelFilter === 'ONLINE' && o.isPosSale) return false;
-    return true;
-  });
-
   // New Expense State
   const [newExpenseTitle, setNewExpenseTitle] = useState('');
   const [newExpenseCategory, setNewExpenseCategory] = useState<Expense['category']>('Sewa');
@@ -224,17 +195,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   // Sync state
   const [isSyncingOrders, setIsSyncingOrders] = useState(false);
 
-  // Compute deduplicated list of categories strictly from registered categories
-  const registeredCategoryNames = Array.from(
-    new Set(categories.map(c => c.name).filter(Boolean))
-  );
+  // --- USER ACCOUNTS & ROLE ACCESS MANAGEMENT STATE ---
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState<'ALL' | UserRole>('ALL');
+  
+  // User Edit/Create Modal State
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [userFormName, setUserFormName] = useState('');
+  const [userFormEmail, setUserFormEmail] = useState('');
+  const [userFormPhone, setUserFormPhone] = useState('');
+  const [userFormRole, setUserFormRole] = useState<UserRole>('pelanggan');
+  const [userFormIsActive, setUserFormIsActive] = useState(true);
 
-  const allCategoryOptions = Array.from(
-    new Set([
-      ...registeredCategoryNames,
-      ...(prodCategory && !registeredCategoryNames.includes(prodCategory) ? [prodCategory] : [])
-    ])
-  ).filter(Boolean);
+  // User Permissions Modal State
+  const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
+  const [permissionsUser, setPermissionsUser] = useState<User | null>(null);
+  const [tempPermissions, setTempPermissions] = useState<FeaturePermissions>({
+    canAccessHome: true,
+    canAccessCatalog: true,
+    canAccessPos: true,
+    canAccessTracking: true,
+    canAccessAdmin: false,
+    canManageProducts: false,
+    canManageCategories: false,
+    canManagePricesAndCogs: false,
+    canViewFinancialReports: false,
+    canManageCoupons: false,
+    canManageCustomersCRM: false,
+    canManageUsersAndRoles: false,
+    canSyncSupabaseAndSheets: false,
+  });
 
   // Delete Confirmation Modal State (replaces blocked native confirm dialogs)
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
@@ -243,6 +234,47 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     itemType: string;
     onConfirm: () => void | Promise<void>;
   } | null>(null);
+
+  // Stats Calculations
+  const totalRevenue = (orders || []).filter(o => o && (o.paymentStatus || '').toUpperCase() === 'PAID').reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+  const totalCogs = (orders || []).filter(o => o && (o.paymentStatus || '').toUpperCase() === 'PAID').reduce((acc, o) => acc + (o.totalCogs || 0), 0);
+  const totalExpenses = (expenses || []).reduce((acc, e) => acc + (e?.amount || 0), 0);
+  const grossProfit = totalRevenue - totalCogs;
+  const netProfit = grossProfit - totalExpenses;
+
+  // Filtered Orders Calculation
+  const filteredOrders = (orders || []).filter(o => {
+    if (!o) return false;
+    const search = (orderSearchTerm || '').toLowerCase().trim();
+    if (search) {
+      const matchNo = (o.orderNumber || '').toLowerCase().includes(search);
+      const matchName = (o.customerName || '').toLowerCase().includes(search);
+      const matchPhone = (o.customerPhone || '').toLowerCase().includes(search);
+      const matchAddr = (o.customerAddress || '').toLowerCase().includes(search);
+      const matchResi = (o.trackingNumber || '').toLowerCase().includes(search);
+      if (!matchNo && !matchName && !matchPhone && !matchAddr && !matchResi) return false;
+    }
+    const orderStatus = (o.orderStatus || 'DELIVERED').toUpperCase();
+    const paymentStatus = (o.paymentStatus || 'PAID').toUpperCase();
+
+    if (orderStatusFilter !== 'ALL' && orderStatus !== orderStatusFilter.toUpperCase()) return false;
+    if (orderPaymentFilter !== 'ALL' && paymentStatus !== orderPaymentFilter.toUpperCase()) return false;
+    if (orderChannelFilter === 'POS' && !o.isPosSale) return false;
+    if (orderChannelFilter === 'ONLINE' && o.isPosSale) return false;
+    return true;
+  });
+
+  // Compute deduplicated list of categories strictly from registered categories
+  const registeredCategoryNames = Array.from(
+    new Set((categories || []).map(c => c?.name).filter(Boolean))
+  );
+
+  const allCategoryOptions = Array.from(
+    new Set([
+      ...registeredCategoryNames,
+      ...(prodCategory && !registeredCategoryNames.includes(prodCategory) ? [prodCategory] : [])
+    ])
+  ).filter(Boolean);
 
   // --- HANDLERS FOR CRUD & SUPABASE SYNC ---
   // Product Handlers
@@ -1140,38 +1172,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     const res = await syncDataToGoogleSheets(settings.googleSheetsWebappUrl);
     setSyncStatus(res.message);
   };
-
-  // --- USER ACCOUNTS & ROLE ACCESS MANAGEMENT STATE ---
-  const [userSearchQuery, setUserSearchQuery] = useState('');
-  const [userRoleFilter, setUserRoleFilter] = useState<'ALL' | UserRole>('ALL');
-  
-  // User Edit/Create Modal State
-  const [userModalOpen, setUserModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [userFormName, setUserFormName] = useState('');
-  const [userFormEmail, setUserFormEmail] = useState('');
-  const [userFormPhone, setUserFormPhone] = useState('');
-  const [userFormRole, setUserFormRole] = useState<UserRole>('pelanggan');
-  const [userFormIsActive, setUserFormIsActive] = useState(true);
-
-  // User Permissions Modal State
-  const [permissionsModalOpen, setPermissionsModalOpen] = useState(false);
-  const [permissionsUser, setPermissionsUser] = useState<User | null>(null);
-  const [tempPermissions, setTempPermissions] = useState<FeaturePermissions>({
-    canAccessHome: true,
-    canAccessCatalog: true,
-    canAccessPos: true,
-    canAccessTracking: true,
-    canAccessAdmin: false,
-    canManageProducts: false,
-    canManageCategories: false,
-    canManagePricesAndCogs: false,
-    canViewFinancialReports: false,
-    canManageCoupons: false,
-    canManageCustomersCRM: false,
-    canManageUsersAndRoles: false,
-    canSyncSupabaseAndSheets: false,
-  });
 
   const openNewUserModal = () => {
     setEditingUser(null);
