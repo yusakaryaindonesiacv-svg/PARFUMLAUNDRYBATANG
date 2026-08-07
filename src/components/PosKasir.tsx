@@ -111,6 +111,7 @@ export const PosKasir: React.FC<PosKasirProps> = ({ products, customers, setting
       customerName: selectedCustomer ? selectedCustomer.name : 'Pelanggan Kasir Tunai',
       customerPhone: selectedCustomer ? selectedCustomer.phone : '085700000000',
       customerAddress: selectedCustomer ? selectedCustomer.address : 'Toko Kalisalak Batang (Walk-in)',
+      customerId: selectedCustomer ? selectedCustomer.id : undefined,
       items: posCart,
       subtotal,
       discountAmount,
