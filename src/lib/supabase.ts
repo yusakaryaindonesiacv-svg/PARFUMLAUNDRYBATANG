@@ -54,26 +54,47 @@ export async function testSupabaseConnection(url: string, key: string): Promise<
   }
   try {
     const testClient = createClient(url, key);
-    const { error } = await testClient.from('products').select('id').limit(1);
+    const { error: prodErr } = await testClient.from('products').select('id').limit(1);
     
-    if (error) {
-      if (error.message?.includes('relation "public.products" does not exist') || error.code === '42P01') {
+    if (prodErr) {
+      if (prodErr.message?.includes('relation "public.products" does not exist') || prodErr.code === '42P01') {
         return { 
           success: false, 
           missingTables: true,
-          message: '⚠️ URL & Anon Key BENAR! Namun tabel database belum dibuat di Supabase Anda.\n\nSilakan buka SQL Editor di dashboard Supabase (https://supabase.com) lalu Paste & Run script SQL Schema yang tersedia di bawah.' 
+          message: '⚠️ URL & Anon Key BENAR! Namun tabel "products" belum dibuat di Supabase Anda.\n\nSilakan buka SQL Editor di dashboard Supabase (https://supabase.com) lalu Paste & Run script SQL Schema yang tersedia di bawah.' 
         };
       }
-      if (error.code === '42501' || error.message?.includes('permission denied')) {
+      if (prodErr.code === '42501' || prodErr.message?.includes('permission denied')) {
         return {
           success: false,
           missingTables: true,
           message: '⚠️ Tabel Supabase terdeteksi tetapi diblokir oleh Row Level Security (RLS).\n\nSilakan jalankan script SQL Schema di bawah untuk membuka akses RLS Public.'
         };
       }
-      return { success: false, message: `Koneksi gagal: ${error.message}` };
+      return { success: false, message: `Koneksi gagal: ${prodErr.message}` };
     }
-    return { success: true, message: '✓ Koneksi Supabase Berhasil & Tabel Database Siap Digunakan!' };
+
+    // Also verify orders table access
+    const { error: ordErr } = await testClient.from('orders').select('id').limit(1);
+    if (ordErr) {
+      if (ordErr.message?.includes('relation "public.orders" does not exist') || ordErr.code === '42P01') {
+        return {
+          success: false,
+          missingTables: true,
+          message: '⚠️ Tabel "orders" (transaksi) belum dibuat di Supabase Anda!\n\nSilakan buka SQL Editor di dashboard Supabase lalu Paste & Run script SQL Schema yang tersedia di bawah.'
+        };
+      }
+      if (ordErr.code === '42501' || ordErr.message?.includes('permission denied')) {
+        return {
+          success: false,
+          missingTables: true,
+          message: '⚠️ Tabel "orders" diblokir oleh Row Level Security (RLS).\n\nSilakan jalankan script SQL Schema di bawah untuk membuka akses RLS Public.'
+        };
+      }
+      return { success: false, message: `Koneksi tabel orders gagal: ${ordErr.message}` };
+    }
+
+    return { success: true, message: '✓ Koneksi Supabase Berhasil! Tabel products & orders Siap Digunakan.' };
   } catch (err: any) {
     return { success: false, message: `Error koneksi: ${err.message || err}` };
   }
@@ -337,10 +358,11 @@ export async function upsertOrderToSupabase(order: Order): Promise<{ success: bo
       id: order.id,
       order_number: order.orderNumber,
       customer_name: order.customerName,
-      customer_phone: order.customerPhone,
-      customer_address: order.customerAddress,
-      items: order.items,
-      subtotal: order.subtotal,
+      customer_phone: order.customerPhone || '',
+      customer_address: order.customerAddress || '',
+      customer_id: order.customerId || null,
+      items: order.items || [],
+      subtotal: order.subtotal || 0,
       discount_amount: order.discountAmount || 0,
       coupon_code: order.couponCode || null,
       shipping_fee: order.shippingFee || 0,
@@ -348,20 +370,50 @@ export async function upsertOrderToSupabase(order: Order): Promise<{ success: bo
       shipping_detail: order.shippingDetail || 'Ambil Sendiri',
       tracking_number: order.trackingNumber || null,
       notes: order.notes || null,
-      total_amount: order.totalAmount,
-      total_cogs: order.totalCogs,
-      payment_method: order.paymentMethod,
-      payment_status: order.paymentStatus,
-      order_status: order.orderStatus,
+      total_amount: order.totalAmount || 0,
+      total_cogs: order.totalCogs || 0,
+      payment_method: order.paymentMethod || 'CASH',
+      payment_status: order.paymentStatus || 'PAID',
+      order_status: order.orderStatus || 'DELIVERED',
       pakasir_transaction_id: order.pakasirTransactionId || null,
       is_pos_sale: !!order.isPosSale,
       created_at: order.createdAt || new Date().toISOString(),
     };
-    const { error } = await client.from('orders').upsert(payload, { onConflict: 'id' });
-    if (error) return { success: false, error: error.message };
+
+    let { error } = await client.from('orders').upsert(payload, { onConflict: 'id' });
+
+    // Fallback if extra columns don't exist in Supabase schema yet
+    if (error && (error.message?.includes('column') || error.message?.includes('does not exist'))) {
+      console.warn('Primary orders payload error, attempting fallback schema:', error.message);
+      const fallbackPayload = {
+        id: order.id,
+        order_number: order.orderNumber,
+        customer_name: order.customerName,
+        customer_phone: order.customerPhone || '',
+        customer_address: order.customerAddress || '',
+        items: order.items || [],
+        subtotal: order.subtotal || 0,
+        discount_amount: order.discountAmount || 0,
+        shipping_fee: order.shippingFee || 0,
+        total_amount: order.totalAmount || 0,
+        total_cogs: order.totalCogs || 0,
+        payment_method: order.paymentMethod || 'CASH',
+        payment_status: order.paymentStatus || 'PAID',
+        order_status: order.orderStatus || 'DELIVERED',
+        created_at: order.createdAt || new Date().toISOString(),
+      };
+      const retry = await client.from('orders').upsert(fallbackPayload, { onConflict: 'id' });
+      error = retry.error;
+    }
+
+    if (error) {
+      console.error('Error upsertOrderToSupabase:', error);
+      return { success: false, error: error.message };
+    }
     return { success: true };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    console.error('Exception upsertOrderToSupabase:', err);
+    return { success: false, error: err.message || 'Unknown error' };
   }
 }
 
@@ -782,15 +834,19 @@ export async function fetchOrdersFromSupabase(): Promise<Order[] | null> {
       data = retry.data;
       error = retry.error;
     }
-    if (error || !data) return null;
+    if (error || !data) {
+      if (error) console.warn('Fetch orders from Supabase error:', error.message);
+      return null;
+    }
     return data.map(item => ({
       id: String(item.id),
       orderNumber: item.order_number,
-      customerName: item.customer_name,
+      customerName: item.customer_name || 'Pelanggan',
       customerPhone: item.customer_phone || '',
       customerAddress: item.customer_address || '',
+      customerId: item.customer_id || undefined,
       items: item.items || [],
-      subtotal: Number(item.subtotal),
+      subtotal: Number(item.subtotal) || 0,
       discountAmount: Number(item.discount_amount) || 0,
       couponCode: item.coupon_code || undefined,
       shippingFee: Number(item.shipping_fee) || 0,
@@ -798,16 +854,17 @@ export async function fetchOrdersFromSupabase(): Promise<Order[] | null> {
       shippingDetail: item.shipping_detail || 'Ambil Sendiri',
       trackingNumber: item.tracking_number || undefined,
       notes: item.notes || undefined,
-      totalAmount: Number(item.total_amount),
-      totalCogs: Number(item.total_cogs),
-      paymentMethod: item.payment_method,
-      paymentStatus: item.payment_status,
-      orderStatus: item.order_status,
+      totalAmount: Number(item.total_amount) || 0,
+      totalCogs: Number(item.total_cogs) || 0,
+      paymentMethod: item.payment_method || 'CASH',
+      paymentStatus: item.payment_status || 'PAID',
+      orderStatus: item.order_status || 'DELIVERED',
       pakasirTransactionId: item.pakasir_transaction_id || undefined,
       isPosSale: !!item.is_pos_sale,
-      createdAt: item.created_at,
+      createdAt: item.created_at || new Date().toISOString(),
     }));
   } catch (err) {
+    console.error('Exception fetching orders from Supabase:', err);
     return null;
   }
 }
@@ -1023,6 +1080,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   customer_name TEXT NOT NULL,
   customer_phone TEXT,
   customer_address TEXT,
+  customer_id TEXT,
   items JSONB NOT NULL,
   subtotal NUMERIC NOT NULL,
   discount_amount NUMERIC DEFAULT 0,
