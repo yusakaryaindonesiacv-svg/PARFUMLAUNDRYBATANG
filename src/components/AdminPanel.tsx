@@ -98,25 +98,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [activeAdminTab, setActiveAdminTab] = useState<'dashboard' | 'products' | 'categories' | 'orders' | 'financials' | 'crm' | 'coupons' | 'banners' | 'users' | 'settings'>('dashboard');
 
   // Stats Calculations
-  const totalRevenue = orders.filter(o => o.paymentStatus === 'PAID').reduce((acc, o) => acc + o.totalAmount, 0);
-  const totalCogs = orders.filter(o => o.paymentStatus === 'PAID').reduce((acc, o) => acc + o.totalCogs, 0);
-  const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
+  const totalRevenue = (orders || []).filter(o => o && (o.paymentStatus || '').toUpperCase() === 'PAID').reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+  const totalCogs = (orders || []).filter(o => o && (o.paymentStatus || '').toUpperCase() === 'PAID').reduce((acc, o) => acc + (o.totalCogs || 0), 0);
+  const totalExpenses = (expenses || []).reduce((acc, e) => acc + (e?.amount || 0), 0);
   const grossProfit = totalRevenue - totalCogs;
   const netProfit = grossProfit - totalExpenses;
 
   // Filtered Orders Calculation
-  const filteredOrders = orders.filter(o => {
-    const search = orderSearchTerm.toLowerCase().trim();
+  const filteredOrders = (orders || []).filter(o => {
+    if (!o) return false;
+    const search = (orderSearchTerm || '').toLowerCase().trim();
     if (search) {
-      const matchNo = o.orderNumber.toLowerCase().includes(search);
-      const matchName = o.customerName.toLowerCase().includes(search);
-      const matchPhone = o.customerPhone.toLowerCase().includes(search);
-      const matchAddr = o.customerAddress.toLowerCase().includes(search);
+      const matchNo = (o.orderNumber || '').toLowerCase().includes(search);
+      const matchName = (o.customerName || '').toLowerCase().includes(search);
+      const matchPhone = (o.customerPhone || '').toLowerCase().includes(search);
+      const matchAddr = (o.customerAddress || '').toLowerCase().includes(search);
       const matchResi = (o.trackingNumber || '').toLowerCase().includes(search);
       if (!matchNo && !matchName && !matchPhone && !matchAddr && !matchResi) return false;
     }
-    if (orderStatusFilter !== 'ALL' && o.orderStatus !== orderStatusFilter) return false;
-    if (orderPaymentFilter !== 'ALL' && o.paymentStatus !== orderPaymentFilter) return false;
+    const orderStatus = (o.orderStatus || 'DELIVERED').toUpperCase();
+    const paymentStatus = (o.paymentStatus || 'PAID').toUpperCase();
+
+    if (orderStatusFilter !== 'ALL' && orderStatus !== orderStatusFilter.toUpperCase()) return false;
+    if (orderPaymentFilter !== 'ALL' && paymentStatus !== orderPaymentFilter.toUpperCase()) return false;
     if (orderChannelFilter === 'POS' && !o.isPosSale) return false;
     if (orderChannelFilter === 'ONLINE' && o.isPosSale) return false;
     return true;
@@ -3137,12 +3141,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-medium">
-                      {users
+                      {(users || [])
                         .filter(u => {
+                          if (!u) return false;
+                          const q = (userSearchQuery || '').toLowerCase();
                           const matchesQuery = 
-                            u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-                            u.email.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-                            (u.phone && u.phone.includes(userSearchQuery));
+                            (u.name || '').toLowerCase().includes(q) ||
+                            (u.email || '').toLowerCase().includes(q) ||
+                            ((u.phone || '').includes(userSearchQuery));
                           const matchesRole = userRoleFilter === 'ALL' || u.role === userRoleFilter;
                           return matchesQuery && matchesRole;
                         })
