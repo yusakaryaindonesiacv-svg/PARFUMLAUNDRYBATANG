@@ -103,6 +103,7 @@ export interface Order {
   customerName: string;
   customerPhone: string;
   customerAddress: string;
+  customerId?: string;
   items: CartItem[];
   subtotal: number;
   discountAmount: number;
